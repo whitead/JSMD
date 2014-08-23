@@ -18,7 +18,7 @@ module.exports = function(grunt) {
 		'Gruntfile.js',
 		'tasks/*.js',
 		'<%= nodeunit.tests %>',
-		'js/**/*.js'
+		'build/js/base.js'
 	    ],
 	    options: {
 		jshintrc: '.jshintrc',
@@ -44,7 +44,8 @@ module.exports = function(grunt) {
 	// Before generating any new files, remove any previously-created files.
 	clean: {
 	    test: ['tmp'],
-	    build: ['build']
+	    build: ['build'],
+	    jsbase: ['build/js/base.js']
 	},
 	
 	// Configuration to be run (and then tested).
@@ -93,13 +94,22 @@ module.exports = function(grunt) {
 	    }
 	    
 	},
+
+	concat: {
+	    build: {
+		src: ['js/**/*.js'],
+		dest: 'build/js/base.js'
+	    }
+	},
 	
 	//put together the js
 	uglify: {
 	    build: {
 		files: {
-		    'build/js/base.min.js': ['js/**/*.js']
-		}
+		    'build/js/base.min.js': ['build/js/base.js']
+		},
+		beautify: true,
+		wrap:false
 	    }
 	},
 
@@ -123,7 +133,7 @@ module.exports = function(grunt) {
     grunt.registerTask('test', ['clean:test', 'init_JSMD', 'nodeunit']);
     
 
-    grunt.registerTask('js', ['jshint', 'test', 'uglify', 'copy:vendor']);
+    grunt.registerTask('js', ['concat', 'jshint', 'test', 'uglify', 'copy:vendor']);
     grunt.registerTask('html', ['htmlhint', 'copy:html']); 
     grunt.registerTask('default', ['clean:build', 'js', 'html', 'connect', 'watch']);
     
