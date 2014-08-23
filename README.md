@@ -1,4 +1,4 @@
 JSMD
 ====
 
-A molecular dynamics written in javascript
+A molecular dynamics written in javascript. 

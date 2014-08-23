@@ -1,0 +1,32 @@
+{
+    "name" : "JSMD",
+    "description": "A molecular dynamics engine implemented in javascript",
+    "version" : "0.1.0",
+    "homepage": "https://github.com/whitead/JSMD",
+    "author" :  {
+	"name": "Andrew D White",
+	"url": "http://andrew-white.com"
+    },
+    "private" : true,
+    "main": "Gruntfile.js",
+    "engines": {
+	"node": ">= 0.8.0"
+    },
+    "scripts": {
+	"test": "grunt test"
+    },    
+    "devDependencies": {
+	"grunt-contrib-jshint": "~0.10.0",
+	"grunt-contrib-clean": "~0.4.0a",
+	"grunt-contrib-nodeunit": "~0.1.0",
+	"grunt-contrib-uglify": "*",
+	"grunt-contrib-watch": "*",
+	"grunt-htmlhint": "*",
+	"matchdep": "*",
+	"grunt": "~0.4.0rc2"
+    },
+    "repository": {
+	"type": "git",
+	"url": "git://github.com/whitead/JSMD.git"
+    }
+}
