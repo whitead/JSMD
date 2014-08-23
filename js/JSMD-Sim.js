@@ -12,11 +12,12 @@ function Sim(box_dim, resolution) {
 
 Sim.prototype.init_render = function(scene) {
     //draw simulation box
+    var geomDim = this.box_dim.applyMatrix4(this.transform);
     this.box = { 
-	'geom': new THREE.BoxGeometry(this.box_dim.applyMatrix4(this.transform)),
+	'geom': new THREE.BoxGeometry(geomDim.x, geomDim.y, geomDim.z),
 	'material': new THREE.MeshBasicMaterial({
             color: 0xff0000,
-            wireframe: false
+            wireframe: true
 	})};
 
     this.box.mesh = new THREE.Mesh(this.box.geom, this.box.material);
