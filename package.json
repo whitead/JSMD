@@ -24,6 +24,7 @@
 	"grunt-contrib-copy": "~0.4.0",
 	"grunt-contrib-connect": "*",
 	"grunt-contrib-concat": "*",
+	"grunt-contrib-less": "*",
 	"grunt-htmlhint": "*",
 	"matchdep": "*",
 	"grunt": "~0.4.0rc2"

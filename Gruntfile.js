@@ -26,11 +26,23 @@ module.exports = function(grunt) {
 	},
 	
 	copy: {
-	    html: {
+	    htmldev: {
+		    cwd: 'html',
+		    src: [ '**/*.html' ],
+		    dest: 'build',
+		    expand: true
+		},
+	    htmlprod: {
 		cwd: 'html',
 		src: [ '**/*.html' ],
 		dest: 'build',
-		expand: true
+		expand: true,
+		options: {
+		    process: function (content, srcpath) {
+			//minify the javascript
+			return content.replace(/"js\/base.js"/g,'"js/base.min.js"');
+		    }		    
+		}	    
 	    },
 	    vendor: {
 		cwd: 'vendor',
@@ -44,8 +56,7 @@ module.exports = function(grunt) {
 	// Before generating any new files, remove any previously-created files.
 	clean: {
 	    test: ['tmp'],
-	    build: ['build'],
-	    jsbase: ['build/js/base.js']
+	    build: ['build']
 	},
 	
 	// Configuration to be run (and then tested).
@@ -86,11 +97,15 @@ module.exports = function(grunt) {
 	watch: {
 	    html: {
 		files: ['html/**/*.html'],
-		tasks: ['html']
+		tasks: ['html-dev']
 	    },
 	    js: {
 		files: ['js/**/*.js'],
-		tasks: ['js']
+		tasks: ['js-dev']
+	    },
+	    cass: {
+		files: ['assets/css/**/*.less'],
+		tasks: ['less:dev']
 	    }
 	    
 	},
@@ -104,12 +119,35 @@ module.exports = function(grunt) {
 	
 	//put together the js
 	uglify: {
-	    build: {
+	    prod: {
 		files: {
 		    'build/js/base.min.js': ['build/js/base.js']
+		}
+	    }
+	},
+
+	//put together CSS
+	less: {
+	    dev: {
+		options: {
+		    paths: ["assets/css"]
 		},
-		beautify: true,
-		wrap:false
+		files: {
+		    "build/css/main.css": "assets/css/main.less"
+		}
+	    },
+	    prod: {
+		options: {
+		    paths: ["assets/css"],
+		    cleancss: true,
+		    modifyVars: {
+			imgPath: '"http://mycdn.com/path/to/images"',
+			bgColor: 'red'
+		    }
+		},
+		files: {
+		    "build/css/main.css": "assets/css/main.less"
+		}
 	    }
 	},
 
@@ -133,8 +171,11 @@ module.exports = function(grunt) {
     grunt.registerTask('test', ['clean:test', 'init_JSMD', 'nodeunit']);
     
 
-    grunt.registerTask('js', ['concat', 'jshint', 'test', 'uglify', 'copy:vendor']);
-    grunt.registerTask('html', ['htmlhint', 'copy:html']); 
-    grunt.registerTask('default', ['clean:build', 'js', 'html', 'connect', 'watch']);
+    grunt.registerTask('js-dev', ['concat', 'jshint', 'test', 'copy:vendor']);
+    grunt.registerTask('js-prod', ['concat', 'uglify', 'copy:vendor']);
+    grunt.registerTask('html-dev', ['htmlhint', 'copy:htmldev']); 
+    grunt.registerTask('html-prod', ['copy:htmlprod']); 
+    grunt.registerTask('default', ['clean:build', 'js-dev', 'html-dev', 'less:dev', 'connect', 'watch']);
+    grunt.registerTask('production', ['clean:build', 'js-prod', 'html-prod','less:dev']);
     
 };
