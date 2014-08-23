@@ -25,9 +25,26 @@ module.exports = function(grunt) {
 	    },
 	},
 	
+	copy: {
+	    html: {
+		cwd: 'html',
+		src: [ '**/*.html' ],
+		dest: 'build',
+		expand: true
+	    },
+	    vendor: {
+		cwd: 'vendor',
+		src: [ '**/*.min.js' ],
+		dest: 'build/js',
+		expand: true
+	    }
+
+	},
+
 	// Before generating any new files, remove any previously-created files.
 	clean: {
-	    tests: ['tmp'],
+	    test: ['tmp'],
+	    build: ['build']
 	},
 	
 	// Configuration to be run (and then tested).
@@ -67,13 +84,14 @@ module.exports = function(grunt) {
 	//watch mode
 	watch: {
 	    html: {
-		files: ['index.html'],
-		tasks: ['htmlhint']
+		files: ['html/**/*.html'],
+		tasks: ['html']
 	    },
 	    js: {
 		files: ['js/**/*.js'],
-		tasks: ['jshint']
+		tasks: ['js']
 	    }
+	    
 	},
 	
 	//put together the js
@@ -81,6 +99,17 @@ module.exports = function(grunt) {
 	    build: {
 		files: {
 		    'build/js/base.min.js': ['js/**/*.js']
+		}
+	    }
+	},
+
+	//host the code
+	connect: {
+	    server: {
+		options: {
+		    port: 4000,
+		    base: 'build',
+		    hostname: '*'
 		}
 	    }
 	}
@@ -91,9 +120,11 @@ module.exports = function(grunt) {
     
     // Whenever the "test" task is run, first clean the "tmp" dir, then run this
     // plugin's task(s), then test the result.
-    grunt.registerTask('test', ['clean', 'init_JSMD', 'nodeunit']);
+    grunt.registerTask('test', ['clean:test', 'init_JSMD', 'nodeunit']);
     
-    // By default, lint and run all tests.
-    grunt.registerTask('default', ['jshint', 'test', 'uglify', 'htmlhint']);
+
+    grunt.registerTask('js', ['jshint', 'test', 'uglify', 'copy:vendor']);
+    grunt.registerTask('html', ['htmlhint', 'copy:html']); 
+    grunt.registerTask('default', ['clean:build', 'js', 'html', 'connect', 'watch']);
     
 };

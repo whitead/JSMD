@@ -21,6 +21,8 @@
 	"grunt-contrib-nodeunit": "~0.1.0",
 	"grunt-contrib-uglify": "*",
 	"grunt-contrib-watch": "*",
+	"grunt-contrib-copy": "~0.4.0",
+	"grunt-contrib-connect": "*",
 	"grunt-htmlhint": "*",
 	"matchdep": "*",
 	"grunt": "~0.4.0rc2"
