@@ -25,10 +25,17 @@ module.exports = function(grunt) {
 	    },
 	},
 	
-	copy: {
+	copy: {	    
+	    assets: {
+		cwd: 'assets',
+		src: ['**'],
+		dest: 'build/assets',
+		expand: true
+	    },
+	    
 	    htmldev: {
 		    cwd: 'html',
-		    src: [ '**/*.html' ],
+		    src: [ '**/*.html'],
 		    dest: 'build',
 		    expand: true
 		},
@@ -112,7 +119,7 @@ module.exports = function(grunt) {
 
 	concat: {
 	    build: {
-		src: ['js/**/*.js'],
+		src: ['js/header.js', 'js/**/JSMD-*.js'],
 		dest: 'build/js/base.js'
 	    }
 	},
@@ -173,8 +180,8 @@ module.exports = function(grunt) {
 
     grunt.registerTask('js-dev', ['concat', 'jshint', 'test', 'copy:vendor']);
     grunt.registerTask('js-prod', ['concat', 'uglify', 'copy:vendor']);
-    grunt.registerTask('html-dev', ['htmlhint', 'copy:htmldev']); 
-    grunt.registerTask('html-prod', ['copy:htmlprod']); 
+    grunt.registerTask('html-dev', ['htmlhint', 'copy:htmldev', 'copy:assets']); 
+    grunt.registerTask('html-prod', ['copy:htmlprod', 'copy:assets']); 
     grunt.registerTask('default', ['clean:build', 'js-dev', 'html-dev', 'less:dev', 'connect', 'watch']);
     grunt.registerTask('production', ['clean:build', 'js-prod', 'html-prod','less:dev']);
     
