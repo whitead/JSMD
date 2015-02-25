@@ -16,8 +16,6 @@ module.exports = function(grunt) {
 	jshint: {
 	    all: [
 		'Gruntfile.js',
-		'tasks/*.js',
-		'<%= nodeunit.tests %>',
 		'build/js/base.js'
 	    ],
 	    options: {
@@ -75,11 +73,6 @@ module.exports = function(grunt) {
 		    'tmp/default_options': ['test/fixtures/testing'],
 		},
 	    }
-	},
-	
-	// Unit tests.
-	nodeunit: {
-	    tests: ['test/*_test.js'],
 	},
 	
 	//html hints
@@ -170,15 +163,7 @@ module.exports = function(grunt) {
 	}
     });
     
-    // Actually load this plugin's task(s).
-    grunt.loadTasks('tasks');
-    
-    // Whenever the "test" task is run, first clean the "tmp" dir, then run this
-    // plugin's task(s), then test the result.
-    grunt.registerTask('test', ['clean:test', 'init_JSMD', 'nodeunit']);
-    
-
-    grunt.registerTask('js-dev', ['concat', 'jshint', 'test', 'copy:vendor']);
+    grunt.registerTask('js-dev', ['concat', 'jshint', 'copy:vendor']);
     grunt.registerTask('js-prod', ['concat', 'uglify', 'copy:vendor']);
     grunt.registerTask('html-dev', ['htmlhint', 'copy:htmldev', 'copy:assets']); 
     grunt.registerTask('html-prod', ['copy:htmlprod', 'copy:assets']); 
