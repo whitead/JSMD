@@ -44,7 +44,6 @@ function square_lattice(counts, spacing, offset) {
 	    for(var i = 0; i < counts.length; i++) {
 		pos.push(tuple[i] * spacing[i] + offset[i]);
 	    }
-	    console.log(pos)
 	    result.push(pos);
 	    
 	});

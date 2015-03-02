@@ -23,6 +23,18 @@ function Scene(elements, root) {
     elements.forEach(function(e) {
 	e.init_render(scene);
     });
+
+    //set-up the performance stats
+    this.stats = new Stats();
+    
+     // align top-left
+    this.stats.domElement.style.position = 'absolute';
+    this.stats.domElement.style.left = '0px';
+    this.stats.domElement.style.top = '0px';
+    
+    root.appendChild( this.stats.domElement );
+
+
         
 }
 
@@ -41,7 +53,7 @@ Scene.prototype.animate = function() {
 
     requestAnimationFrame(this.animate.bind(this));
     this.render();
-    
+    this.stats.update();
 };
 
 
