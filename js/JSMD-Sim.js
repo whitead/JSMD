@@ -55,7 +55,7 @@ Sim.prototype.init_render = function(scene) {
 	}
 	//create the particle, set it transparent (so we can see through the png transparency) and color it
 	this.particles.mat = new THREE.PointCloudMaterial( { size: this.particle_radius, sizeAttenuation: true, map: this.particles.sprite, transparent: true } );
-	this.particles.mat.color.setHSL( 0.8, 0.7, 0.9 );
+	this.particles.mat.color.setRGB( 0.0, 1.0, 0.5 );
 
 	//now, we place vertices at each of the positions
 	for(var i = 0; i < this.positions.length; i++) {
@@ -68,6 +68,15 @@ Sim.prototype.init_render = function(scene) {
 	this.particles.cloud = new THREE.PointCloud(this.particles.geom, this.particles.mat);
 	this.particles.sortParticles = true;
 	scene.add(this.particles.cloud);
+
+	//Creaete some velocities and positions
+	this.velocities = [];
+	this.forces = [];
+	this.positions.forEach(function() {
+	    this.velocities.push([0, 0, 0]);
+	    this.forces.push([0, 0, 0]);
+	});
+	
     }
 
 };
@@ -107,9 +116,9 @@ Sim.prototype.update = function() {
     
     //this is the actual simulation
     
-    this.positions.forEach(function(v) {
-	v[0] += 0.01 * timestep;
-	v[1] += 0.01 * timestep;
-	v[2] += 0.02 * timestep;
+    this.positions.forEach(function(r) {
+	r[0] += 1 * timestep;
+	r[1] += 0.5 * timestep;
+	r[2] += -0.2 * timestep;
     });
 }
