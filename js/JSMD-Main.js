@@ -6,5 +6,5 @@ function main() {
     elements[0].set_positions(square_lattice([5,5,5], [1,1,1], -2));
     var scene = new Scene(elements, root);
     scene.animate();
-
+    
 }

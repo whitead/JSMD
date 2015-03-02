@@ -7,6 +7,9 @@ function Scene(elements, root) {
 
     this.controls = new THREE.OrbitControls( this.camera );
     this.controls.damping = 0.2;
+    this.controls.maxPolarAngle = Math.PI / 2;
+    this.controls.minAzimuthAngle = -Math.PI / 2;
+    this.controls.maxAzimuthAngle = Math.PI / 2;
     this.controls.addEventListener( 'change', this.render.bind(this) );
 
     this.scene = new THREE.Scene();

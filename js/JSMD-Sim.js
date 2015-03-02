@@ -72,11 +72,10 @@ Sim.prototype.init_render = function(scene) {
 	//Creaete some velocities and positions
 	this.velocities = [];
 	this.forces = [];
-	this.positions.forEach(function() {
+	for(i = 0; i < this.positions.length; i++) {
 	    this.velocities.push([0, 0, 0]);
 	    this.forces.push([0, 0, 0]);
-	});
-	
+	}
     }
 
 };
@@ -115,7 +114,6 @@ Sim.prototype.update = function() {
     }
     
     //this is the actual simulation
-    
     this.positions.forEach(function(r) {
 	r[0] += 1 * timestep;
 	r[1] += 0.5 * timestep;
