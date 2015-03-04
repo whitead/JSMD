@@ -19,10 +19,13 @@ function Sim(box_dim, viewwidth, viewheight) {
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
-    this.timestep = 0.01;
+    this.timestep = 0.25;
 
     //set-up listeners
     this.update_listeners = [];
+
+    //set-up simulation stuff
+    this.m=1;
 }
 
 Sim.prototype.add_update_listener = function(x) {
@@ -55,7 +58,7 @@ Sim.prototype.init_render = function(scene) {
 	}
 	//create the particle, set it transparent (so we can see through the png transparency) and color it
 	this.particles.mat = new THREE.PointCloudMaterial( { size: this.particle_radius, sizeAttenuation: true, map: this.particles.sprite, transparent: true } );
-	this.particles.mat.color.setRGB( 0.0, 1.0, 0.5 );
+	this.particles.mat.color.setRGB( 0.9, 0.9, 1.0 );
 
 	//now, we place vertices at each of the positions
 	for(var i = 0; i < this.positions.length; i++) {
@@ -73,9 +76,18 @@ Sim.prototype.init_render = function(scene) {
 	this.velocities = [];
 	this.forces = [];
 	for(i = 0; i < this.positions.length; i++) {
-	    this.velocities.push([0, 0, 0]);
+	    this.velocities.push([Math.random(), Math.random(), Math.random()]);
 	    this.forces.push([0, 0, 0]);
 	}
+	//create random ks
+	this.ks = this.positions.map(function() {
+	    return 0.75 + 0.25 * Math.random();	    
+	});
+	//create initial positions of them
+	this.r0 = this.positions.map(function(x) {
+	    return x.slice();
+	});
+	
     }
 
 };
@@ -110,13 +122,41 @@ Sim.prototype.update = function() {
     //target is 60 fps
     var timestep = this.timestep;
     if(1.0 / delta < 60) {
-	timestep *= 60 * delta 
+	timestep *= 60 * delta
+	
     }
     
+
     //this is the actual simulation
-    this.positions.forEach(function(r) {
-	r[0] += 1 * timestep;
-	r[1] += 0.5 * timestep;
-	r[2] += -0.2 * timestep;
-    });
+	
+	
+    this.calculate_velocities(timestep);
 }
+
+Sim.prototype.calculate_forces=function() {
+    for(var i = 0; i < this.positions.length; i++) {
+	var r=0;
+	for(var j = 0; j < 3; j++) {
+	    r+=Math.pow(this.positions[i][j]-this.r0[i][j],2);
+	}
+	r = Math.sqrt(r)
+	for( j = 0; j < 3; j++) {
+    	    
+	    this.forces[i][j]=-this.ks[i]*(this.positions[i][j] - this.r0[i][j]); 
+	    
+	}
+    }
+}
+
+Sim.prototype.calculate_velocities=function(timestep){
+    for(var i = 0; i <  this.positions.length; i++) {
+	for(var j = 0; j < 3; j++) {
+	    this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);
+            this.positions[i][j]+=0.5*timestep*this.velocities[i][j];
+	    this.calculate_forces();
+	    this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);	     	     	   
+	}	    	    	       
+    }
+}	
+	
+	
