@@ -19,7 +19,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
-    this.timestep = 0.25;
+    this.timestep = 0.1;
 
     //set-up listeners
     this.update_listeners = [];
@@ -47,18 +47,18 @@ Sim.prototype.init_render = function(scene) {
 	})};
 
     this.box.mesh = new THREE.Mesh(this.box.geom, this.box.material);
-    scene.add(this.box.mesh);    
+//    scene.add(this.box.mesh);    
 
     //if we have positions, then we render them
     if('undefined' !== typeof this.positions) {
 	//create the geometric
 	this.particles = {
 	    'geom': new THREE.Geometry(),
-	    'sprite': THREE.ImageUtils.loadTexture('assets/textures/ball.png'),
+	    'sprite': THREE.ImageUtils.loadTexture('assets/textures/ball.png')
 	}
 	//create the particle, set it transparent (so we can see through the png transparency) and color it
-	this.particles.mat = new THREE.PointCloudMaterial( { size: this.particle_radius, sizeAttenuation: true, map: this.particles.sprite, transparent: true } );
-	this.particles.mat.color.setRGB( 0.9, 0.9, 1.0 );
+	this.particles.mat = new THREE.PointCloudMaterial( { size: this.particle_radius, sizeAttenuation: true, blending: THREE.Additive, map: this.particles.sprite, transparent: true, alphaTest: 0.5 } );
+	this.particles.mat.color.setRGB( 0.0, 0.1, 1.0 );
 
 	//now, we place vertices at each of the positions
 	for(var i = 0; i < this.positions.length; i++) {
@@ -76,12 +76,13 @@ Sim.prototype.init_render = function(scene) {
 	this.velocities = [];
 	this.forces = [];
 	for(i = 0; i < this.positions.length; i++) {
-	    this.velocities.push([Math.random(), Math.random(), Math.random()]);
+	    this.velocities.push([(i % 2 + 1) * 2 - 3, (i % 2 + 1) * 2 - 3, 5 * i / this.positions.length]);
+//	    this.velocities.push([Math.random(), Math.random(), Math.random()]);
 	    this.forces.push([0, 0, 0]);
 	}
 	//create random ks
 	this.ks = this.positions.map(function() {
-	    return 0.75 + 0.25 * Math.random();	    
+	    return 0.75 + 0.05 * Math.random();	    
 	});
 	//create initial positions of them
 	this.r0 = this.positions.map(function(x) {
@@ -96,7 +97,7 @@ Sim.prototype.init_render = function(scene) {
 //this is the main loop
 Sim.prototype.animate = function() {
     //treat listeners
-    this.update_listeners.forEach(function(x) {x.update()});
+//    this.update_listeners.forEach(function(x) {x.update()});
     this.update();   
     this.render();
 
@@ -121,16 +122,13 @@ Sim.prototype.update = function() {
     var delta = this.clock.getDelta();
     //target is 60 fps
     var timestep = this.timestep;
-    if(1.0 / delta < 60) {
-	timestep *= 60 * delta
-	
-    }
-    
+    if(1.0 / delta > 60) {
+	timestep *= 60 * delta	
+    }    
 
-    //this is the actual simulation
+    //this is the actual simulation	
 	
-	
-    this.calculate_velocities(timestep);
+    this.integrate(timestep);
 }
 
 Sim.prototype.calculate_forces=function() {
@@ -148,15 +146,22 @@ Sim.prototype.calculate_forces=function() {
     }
 }
 
-Sim.prototype.calculate_velocities=function(timestep){
-    for(var i = 0; i <  this.positions.length; i++) {
-	for(var j = 0; j < 3; j++) {
+Sim.prototype.integrate=function(timestep){
+
+    var i,j;
+    for(i = 0; i <  this.positions.length; i++) {
+	for(j = 0; j < 3; j++) {
 	    this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);
             this.positions[i][j]+=0.5*timestep*this.velocities[i][j];
-	    this.calculate_forces();
-	    this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);	     	     	   
 	}	    	    	       
     }
+    this.calculate_forces();
+    for(i = 0; i <  this.positions.length; i++) {
+	for(j = 0; j < 3; j++) {
+	   this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);	     	     	   
+	}	    	    	       
+    }
+
 }	
 	
 	
