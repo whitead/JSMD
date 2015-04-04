@@ -134,29 +134,17 @@ Sim.prototype.update = function() {
 	
     this.integrate(timestep);
 }
-
 Sim.prototype.calculate_forces=function() {
-
-    var i,j,k;
-
-    for(i = 0; i < this.positions.length; i++)
-	for(j = 0; j < 3; j++)
-	    this.forces[i][j] = 0;
-    
-    var deno=Math.pow((this.sigma),2);    
-    for(i = 0; i < this.positions.length; i++) {
-	var r = [0,0,0];
-	var mag_r = 0;
-	for(k = 0; k< this.positions.length && k !== i; k++) {	    
-	    for(j = 0; j < 3; j++) {
-		r[j] = this.positions[i][j]-this.positions[k][j];
-		mag_r += r[j] * r[j];
-	    }
-	    mag_r = Math.sqrt(mag_r);	    
-	    var a=2*Math.pow((this.sigma/mag_r),14)-Math.pow((this.sigma/mag_r),8);
-	    for(j = 0; j < 3; j++) {
-    	    	this.forces[i][j]+=(-24)*(r[j])*this.sigma * a/deno / mag_r; 
-	    }
+    for(var i = 0; i < this.positions.length; i++) {
+	var r=0;
+	for(var j = 0; j < 3; j++) {
+	    r+=Math.pow(this.positions[i][j]-this.r0[i][j],2);
+	}
+	r = Math.sqrt(r)
+	for( j = 0; j < 3; j++) {
+    	    
+	    this.forces[i][j]=-this.ks[i]*(this.positions[i][j] - this.r0[i][j]); 
+	    
 	}
     }
 }
