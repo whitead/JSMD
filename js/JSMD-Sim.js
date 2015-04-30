@@ -1,3 +1,4 @@
+
 /*
 * box_dim : a THREE.Vector3 specifying the box dimension 
 */
@@ -30,6 +31,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.sigma=1;
 
 
+    
 }
 
 Sim.prototype.add_update_listener = function(x) {
@@ -46,7 +48,7 @@ Sim.prototype.init_render = function(scene) {
     this.box = { 
 	'geom': new THREE.BoxGeometry(geomDim.x, geomDim.y, geomDim.z),
 	'material': new THREE.MeshBasicMaterial({
-           color: 0xff0000,
+           color:  0xff0000,
             wireframe: true
 	})};
 
@@ -85,8 +87,8 @@ Sim.prototype.init_render = function(scene) {
 	    this.forces.push([0, 0, 0]);
 	}
 	//create random ks
-	this.ks = this.positions.map(function() {
-	    return 0.75 + 0.05 * Math.random();	    
+	this.ks =this.positions.map(function() {
+	    return 1;	 //choose a better k later on, I made it equal to 1   
 	});
 	//create initial positions of them
 	this.r0 = this.positions.map(function(x) {
@@ -134,7 +136,34 @@ Sim.prototype.update = function() {
 	
     this.integrate(timestep);
 }
+//Sim.prototype.minimum_distance=function(position1, position2){
+  //  var difference=(position1-position2)/this.box_dim.x;
+   // var difference2=position1-position2-Math.floor(difference)*this.box_dim.x;
+   // var dx2= this.box_dim.x-Math.abs(difference2);
+   // var answer=[];
+  //  if (Math.abs(difference2)>dx2){
+//	return answer.push(dx2);
+  //  }
+   // else {
+//	return answer.push(Math.abs(difference2));
+ //   }
+//}
 
+Sim.prototype.rounded=function(number){
+    if(number<0){
+        return (Math.ceil(number-0.5));
+    }
+    else{
+        return (Math.floor(number+0.5));
+    }
+}
+Sim.prototype.min_image_dist=function(x1,x2){
+    var change=x1-x2;
+    return(Math.abs(change-this.rounded(change/this.box_dim.x)*this.box_dim.x));
+}
+Sim.prototype.wrap=function(sos){
+    return (sos-Math.floor(sos/this.box_dim.x)*this.box_dim.x);
+}
 Sim.prototype.calculate_forces=function() {
 
     var i,j,k;
@@ -149,7 +178,7 @@ Sim.prototype.calculate_forces=function() {
 	var mag_r = 0;
 	for(k = 0; k< this.positions.length && k !== i; k++) {	    
 	    for(j = 0; j < 3; j++) {
-		r[j] = this.positions[i][j]-this.positions[k][j];
+		r[j] =this.min_image_dist(this.positions[i][j],this.positions[k][j]);
 		mag_r += r[j] * r[j];
 	    }
 	    mag_r = Math.sqrt(mag_r);	    
@@ -161,13 +190,27 @@ Sim.prototype.calculate_forces=function() {
     }
 }
 
+
+//Sim.prototype.Minimum_image=function(x){
+  //  var change= (x-this.box_dim.x)/this.box_dim.x;
+   // var change2=x-this.box_dim.x-Math.floor(change)*this.box_dim.x;
+   // var change3=Math.abs(change2);
+   // if (Math.abs(change2)>change3){
+//	return ((change3));
+  //  }
+  // else{
+//	return(Math.abs(change3));
+ //   }
+//}
+
 Sim.prototype.integrate=function(timestep){
 
     var i,j;
     for(i = 0; i <  this.positions.length; i++) {
 	for(j = 0; j < 3; j++) {
 	    this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);
-            this.positions[i][j]+=0.5*timestep*this.velocities[i][j];
+	    this.positions[i][j]+=(0.5*timestep*this.velocities[i][j]);
+	    this.positions[i][j]=this.wrap(this.positions[i][j]);
 	}	    	    	       
     }
     this.calculate_forces();
@@ -178,6 +221,4 @@ Sim.prototype.integrate=function(timestep){
     }
 
 }	
-	
 
-	
