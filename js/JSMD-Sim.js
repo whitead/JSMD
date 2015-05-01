@@ -183,7 +183,7 @@ Sim.prototype.calculate_forces=function() {
 	var mag_r = 0;
 	for(k = 0; k< this.positions.length && k !== i; k++) {	    
 	    for(j = 0; j < 3; j++) {
-		var a= this.positions[i][j];
+		var d= this.positions[i][j];
 		var b=this.positions[k][j];
 		r[j] =this.min_image_dist(a,b);
 		mag_r += r[j] * r[j];
