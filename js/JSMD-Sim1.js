@@ -29,8 +29,6 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.m=1;
     this.epsilon=1;
     this.sigma=1;
-    this.kb=1;
-    this.T=2;
 
 
     
@@ -81,20 +79,17 @@ Sim.prototype.init_render = function(scene) {
 	scene.add(this.particles.cloud);
 
 	//Creaete some velocities and positions
-
 	this.velocities = [];
 	this.forces = [];
-	var multFact= Math.sqrt(this.kb*this.T/this.m);
 	for(i = 0; i < this.positions.length; i++) {
-	   var nd = new NormalDistribution(1,0); 
-	    var randomFloat = nd.sample();
-	    this.velocities.push([nd.sample()*multFact, nd.sample()*multFact, nd.sample()*multFact]);
+	    this.velocities.push([(i % 2 + 1) * 2 - 3, (i % 2 + 1) * 2 - 3, 5 * i / this.positions.length]);
+//	    this.velocities.push([Math.random(), Math.random(), Math.random()]);
 	    this.forces.push([0, 0, 0]);
 	}
 	//create random ks
-	//this.ks = this.positions.map(function() {
-	    //return 0.75 + 0.05 * Math.random();	    
-	
+	this.ks =this.positions.map(function() {
+	    return 1;	 //choose a better k later on, I made it equal to 1   
+	});
 	//create initial positions of them
 	this.r0 = this.positions.map(function(x) {
 	    return x.slice();
@@ -183,9 +178,7 @@ Sim.prototype.calculate_forces=function() {
 	var mag_r = 0;
 	for(k = 0; k< this.positions.length && k !== i; k++) {	    
 	    for(j = 0; j < 3; j++) {
-		var a= this.positions[i][j];
-		var b=this.positions[k][j];
-		r[j] =this.min_image_dist(a,b);
+		r[j] =this.min_image_dist(this.positions[i][j],this.positions[k][j]);
 		mag_r += r[j] * r[j];
 	    }
 	    mag_r = Math.sqrt(mag_r);	    
