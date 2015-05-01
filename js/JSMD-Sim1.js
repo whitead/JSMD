@@ -20,7 +20,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
-    this.timestep = 0.005;
+    this.timestep = 0.1;
 
     //set-up listeners
     this.update_listeners = [];
@@ -28,10 +28,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     //set-up simulation stuff
     this.m=1;
     this.epsilon=1;
-
-    this.sigma=0.5;
-    this.kb=1;
-    this.T=2;
+    this.sigma=1;
 
 
     
@@ -47,8 +44,7 @@ Sim.prototype.set_positions = function(positions) {
 
 Sim.prototype.init_render = function(scene) {
     //draw simulation box
-
-    var geomDim = this.box_dim.clone().applyMatrix4(this.transform);
+    var geomDim = this.box_dim.applyMatrix4(this.transform);
     this.box = { 
 	'geom': new THREE.BoxGeometry(geomDim.x, geomDim.y, geomDim.z),
 	'material': new THREE.MeshBasicMaterial({
@@ -57,8 +53,7 @@ Sim.prototype.init_render = function(scene) {
 	})};
 
     this.box.mesh = new THREE.Mesh(this.box.geom, this.box.material);
-    scene.add(this.box.mesh);
-
+//    scene.add(this.box.mesh);    
 
     //if we have positions, then we render them
     if('undefined' !== typeof this.positions) {
@@ -84,22 +79,17 @@ Sim.prototype.init_render = function(scene) {
 	scene.add(this.particles.cloud);
 
 	//Creaete some velocities and positions
-
 	this.velocities = [];
 	this.forces = [];
-	var multFact= Math.sqrt(this.kb*this.T/this.m);
 	for(i = 0; i < this.positions.length; i++) {
-	   var nd = new NormalDistribution(1,0); 
-	    var randomFloat = nd.sample();
-	    this.velocities.push([nd.sample()*multFact, nd.sample()*multFact, nd.sample()*multFact]);
+	    this.velocities.push([(i % 2 + 1) * 2 - 3, (i % 2 + 1) * 2 - 3, 5 * i / this.positions.length]);
+//	    this.velocities.push([Math.random(), Math.random(), Math.random()]);
 	    this.forces.push([0, 0, 0]);
 	}
 	//create random ks
-
-	//this.ks = this.positions.map(function() {
-	    //return 0.75 + 0.05 * Math.random();	    
-	
-
+	this.ks =this.positions.map(function() {
+	    return 1;	 //choose a better k later on, I made it equal to 1   
+	});
 	//create initial positions of them
 	this.r0 = this.positions.map(function(x) {
 	    return x.slice();
@@ -146,17 +136,18 @@ Sim.prototype.update = function() {
 	
     this.integrate(timestep);
 }
-Sim.prototype.minimum_distance=function(position1, position2){
-    var difference=(position1-position2)/this.box_dim.x;
-    var difference2=position1-position2-Math.floor(difference)*this.box_dim.x;
-    var dx2= this.box_dim.x-Math.abs(difference2);
-    if (Math.abs(difference2)>dx2){
-	return (dx2);
-    }
-    else {
-	return (Math.abs(difference2));
-   }
-}
+//Sim.prototype.minimum_distance=function(position1, position2){
+  //  var difference=(position1-position2)/this.box_dim.x;
+   // var difference2=position1-position2-Math.floor(difference)*this.box_dim.x;
+   // var dx2= this.box_dim.x-Math.abs(difference2);
+   // var answer=[];
+  //  if (Math.abs(difference2)>dx2){
+//	return answer.push(dx2);
+  //  }
+   // else {
+//	return answer.push(Math.abs(difference2));
+ //   }
+//}
 
 Sim.prototype.rounded=function(number){
     if(number<0){
@@ -187,10 +178,7 @@ Sim.prototype.calculate_forces=function() {
 	var mag_r = 0;
 	for(k = 0; k< this.positions.length && k !== i; k++) {	    
 	    for(j = 0; j < 3; j++) {
-		var d= this.positions[i][j];
-		var b=this.positions[k][j];
-
-		r[j] =this.min_image_dist(b,d);
+		r[j] =this.min_image_dist(this.positions[i][j],this.positions[k][j]);
 		mag_r += r[j] * r[j];
 	    }
 	    mag_r = Math.sqrt(mag_r);	    
@@ -203,17 +191,17 @@ Sim.prototype.calculate_forces=function() {
 }
 
 
-Sim.prototype.Minimum_image=function(x){
-    var change= (x-this.box_dim.x)/this.box_dim.x;
-    var change2=x-this.box_dim.x-Math.floor(change)*this.box_dim.x;
-    var change3=Math.abs(change2);
-    if (Math.abs(change2)>change3){
-	return ((change3));
-    }
-    else{
-	return(Math.abs(change3));
-    }
-}
+//Sim.prototype.Minimum_image=function(x){
+  //  var change= (x-this.box_dim.x)/this.box_dim.x;
+   // var change2=x-this.box_dim.x-Math.floor(change)*this.box_dim.x;
+   // var change3=Math.abs(change2);
+   // if (Math.abs(change2)>change3){
+//	return ((change3));
+  //  }
+  // else{
+//	return(Math.abs(change3));
+ //   }
+//}
 
 Sim.prototype.integrate=function(timestep){
 

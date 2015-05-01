@@ -39,14 +39,11 @@ function square_lattice(counts, spacing, offset) {
     }
 
     enumerate_grid(function(tuple) {
-	tuple.forEach(function() {
-	    var pos = []
-	    for(var i = 0; i < counts.length; i++) {
-		pos.push(tuple[i] * spacing[i] + offset[i]);
-	    }
-	    result.push(pos);
-	    
-	});
+	var pos = []
+	for(var i = 0; i < counts.length; i++) {
+	    pos.push(tuple[i] * spacing[i] + offset[i]);
+	}
+	result.push(pos);
     }, counts.length, counts);
     return result;
 }
