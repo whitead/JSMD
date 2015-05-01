@@ -15,7 +15,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.transform = new THREE.Matrix4();
     this.transform.makeScale(resolution, resolution, resolution);    
 
-    this.particle_radius = 25;
+    this.particle_radius = 50;
 
     //setup time
     this.clock = new THREE.Clock();
@@ -29,9 +29,9 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.m=1;
     this.epsilon=1;
 
-    this.sigma=0.5;
+    this.sigma=1.0;
     this.kb=1;
-    this.T=2;
+    this.T=1;
 
 
     
@@ -124,9 +124,10 @@ Sim.prototype.render = function() {
     
     if(this.particles) {
 	for(var i = 0; i < this.positions.length; i++) {
-	    this.particles.geom.vertices[i].x = this.resolution * this.positions[i][0];
-	    this.particles.geom.vertices[i].y = this.resolution * this.positions[i][1];
-	    this.particles.geom.vertices[i].z = this.resolution * this.positions[i][2];
+	    this.particles.geom.vertices[i].x = this.resolution * (this.positions[i][0] - this.box_dim.x / 2);
+								 
+	    this.particles.geom.vertices[i].y = this.resolution * (this.positions[i][1] - this.box_dim.y / 2);
+	    this.particles.geom.vertices[i].z = this.resolution * (this.positions[i][2] - this.box_dim.z / 2);
 	}
 	this.particles.geom.verticesNeedUpdate = true;
     }
