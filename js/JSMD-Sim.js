@@ -20,7 +20,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
-    this.timestep = 0.005;
+    this.timestep = 0.0000005;
 
     //set-up listeners
     this.update_listeners = [];
@@ -178,15 +178,19 @@ Sim.prototype.calculate_forces=function() {
 
     var i,j,k;
 
-    for(i = 0; i < this.positions.length; i++)
-	for(j = 0; j < 3; j++)
+   for(i = 0; i < this.positions.length; i++){
+	for(j = 0; j < 3; j++){
 	    this.forces[i][j] = 0;
+	}
+    }
     
     var deno=Math.pow((this.sigma),2);    
     for(i = 0; i < this.positions.length; i++) {
-	var r = [0,0,0];
-	var mag_r = 0;
-	for(k = 0; k< this.positions.length && k !== i; k++) {	    
+	
+	
+	for(k = 0; k< this.positions.length && k !== i; k++) {	
+	  var r = [0,0,0];
+	  var mag_r = 0;
 	    for(j = 0; j < 3; j++) {
 		var d= this.positions[i][j];
 		var b=this.positions[k][j];
