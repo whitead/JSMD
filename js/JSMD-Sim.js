@@ -15,12 +15,11 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.transform = new THREE.Matrix4();
     this.transform.makeScale(resolution, resolution, resolution);    
 
-    this.particle_radius = 50;
 
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
-    this.timestep = 0.0000005;
+    this.timestep = 0.01;
 
     //set-up listeners
     this.update_listeners = [];
@@ -32,6 +31,8 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.sigma=1.0;
     this.kb=1;
     this.T=1;
+    this.particle_radius = this.sigma * 150; 
+    
 
 
     
@@ -159,7 +160,7 @@ Sim.prototype.minimum_distance=function(position1, position2){
    }
 }
 
-Sim.prototype.rounded=function(number){
+function rounded(number){
     if(number<0){
         return (Math.ceil(number-0.5));
     }
@@ -169,7 +170,7 @@ Sim.prototype.rounded=function(number){
 }
 Sim.prototype.min_image_dist=function(x1,x2){
     var change=x1-x2;
-    return(Math.abs(change-this.rounded(change/this.box_dim.x)*this.box_dim.x));
+    return( change -rounded(change/this.box_dim.x)*this.box_dim.x );
 }
 Sim.prototype.wrap=function(sos){
     return (sos-Math.floor(sos/this.box_dim.x)*this.box_dim.x);
@@ -201,24 +202,12 @@ Sim.prototype.calculate_forces=function() {
 	    mag_r = Math.sqrt(mag_r);	    
 	    var a=2*Math.pow((this.sigma/mag_r),14)-Math.pow((this.sigma/mag_r),8);
 	    for(j = 0; j < 3; j++) {
-    	    	this.forces[i][j]+=(-24)*(r[j])*this.sigma * a/deno / mag_r; 
+    	    	this.forces[i][j]+=(-24)*(r[j])*this.epsilon * a/deno / mag_r; 
 	    }
 	}
     }
 }
 
-
-Sim.prototype.Minimum_image=function(x){
-    var change= (x-this.box_dim.x)/this.box_dim.x;
-    var change2=x-this.box_dim.x-Math.floor(change)*this.box_dim.x;
-    var change3=Math.abs(change2);
-    if (Math.abs(change2)>change3){
-	return ((change3));
-    }
-    else{
-	return(Math.abs(change3));
-    }
-}
 
 Sim.prototype.integrate=function(timestep){
 
