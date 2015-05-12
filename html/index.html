@@ -10,20 +10,39 @@
     </head>
 
     <body>
-
-      <div id="JSMD"></div>
       
+      <canvas id="chart" width="400" height="100"></canvas>
+      <div id="JSMD"></div>
+
       <script src="js/three.min.js"></script>
       <script src="js/orbitcontrol.min.js"></script>
       <script src="js/stats.min.js"></script>
+      <script src="js/smoothie.js"></script>
       <script src="js/base.js"></script>
 
       <script>
 	window.onload = function() {
-	  main();
+	main();
+
+      // Randomly add a data point every 500ms
+      var random = new TimeSeries();
+      setInterval(function() {
+        random.append(new Date().getTime(), Math.random() * 10000);
+      }, 500);
+      
+      function createTimeline() {
+        var chart = new SmoothieChart();
+        chart.addTimeSeries(random, { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.2)', lineWidth: 4 });
+        chart.streamTo(document.getElementById("chart"), 500);
+      }
+	createTimeline();
+	
 	}
       </script>
 
     </body>
 
 </html>
+
+
+
