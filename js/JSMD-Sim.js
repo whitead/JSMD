@@ -130,7 +130,9 @@ function rounded(number){
 }
 Sim.prototype.min_image_dist=function(x1,x2){
     var change=x1-x2;
+
     return ((change -rounded(change/this.box_dim.x)*this.box_dim.x) );
+
 }
 Sim.prototype.wrap=function(sos){
     return (sos-Math.floor(sos/this.box_dim.x)*this.box_dim.x);
@@ -166,16 +168,20 @@ Sim.prototype.minimum_distance=function(position1, position2){
     var difference2=position1-position2-Math.floor(difference)*this.box_dim.x;
     var dx2= this.box_dim.x-Math.abs(difference2);
     if (Math.abs(difference2)>dx2){
+
 	return (Math.abs(dx2));
+
     }
     else {
 	return (Math.abs(difference2));
    }
 }
+
 /*
 * This calculates the LJ force on each particle, updates the forces
 * array and computes total potential energy.
 */
+
 Sim.prototype.calculate_forces=function() {
     var i,j,k; //indices
     var pe = 0; //potential energy
@@ -196,6 +202,7 @@ Sim.prototype.calculate_forces=function() {
 	    var mag_r=0 ; //The magnitude
 
 	    for(j = 0; j < 3; j++) {
+
 		//for each component of position
 
 		//compute the minimum image distance.
@@ -222,9 +229,49 @@ Sim.prototype.calculate_forces=function() {
     return pe;
 }
 Sim.prototype.integrate=function(timestep){
+<<<<<<< HEAD
     var ke=0;
     var pe=0
     var i,j;
+=======
+
+   
+  
+    // Calculation of total energy
+    // var i,j,k;
+    
+  
+  /*  var deno=Math.pow((this.sigma),2);    
+    for(i = 0; i < this.positions.length; i++) {
+	
+	
+	for(k = 0; k< this.positions.length && k !== i; k++) {	
+	  var r = [0,0,0];
+	  var mag_r = 0;
+	    for(j = 0; j < 3; j++) {
+		var d= this.wrap(this.positions[i][j]);
+		var b=this.wrap(this.positions[k][j]);
+
+		r[j] =this.min_image_dist(b,d);
+		mag_r += r[j] * r[j];
+	    }
+	    mag_r = Math.sqrt(mag_r);	    
+	    PE += 4*this.epsilon*(Math.pow((this.sigma/mag_r),12)-Math.pow((this.sigma/mag_r),6));
+	    
+	}
+	var vel=0;
+	for(j = 0; j < 3; j++) {
+	
+	    vel += Math.pow(this.velocities[i][j],2);
+	}
+	
+	KE += 0.5*this.m*vel;
+    }
+    var TE = KE+PE;*/
+  
+    
+    //integrator
+
     for(i = 0; i <  this.positions.length; i++) {
 	for(j = 0; j < 3; j++) {
 	    this.velocities[i][j]+=(0.5*timestep*this.forces[i][j]/this.m);
@@ -240,5 +287,10 @@ Sim.prototype.integrate=function(timestep){
 	    ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2))
 	}	    	    	       
     }
-    console.log(ke + pe)
+
+    var te = (ke + pe);
+
+
+	
+      window.onload = new plot(te);
 }
