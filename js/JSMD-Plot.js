@@ -1,6 +1,6 @@
 function update_plot(TE, chart) {
 
-    var chart_data = chart.timeSeries[0];
+    var chart_data = chart.seriesSet[0].timeSeries;
     chart_data.append(new Date().getTime(), TE);
 }
     
