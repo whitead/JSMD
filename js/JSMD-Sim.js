@@ -229,11 +229,10 @@ Sim.prototype.calculate_forces=function() {
     return pe;
 }
 Sim.prototype.integrate=function(timestep){
-<<<<<<< HEAD
+
     var ke=0;
     var pe=0
     var i,j;
-=======
 
    
   
@@ -292,5 +291,5 @@ Sim.prototype.integrate=function(timestep){
 
 
 	
-      window.onload = new plot(te);
+      window.onload = new update_plot(te);
 }
