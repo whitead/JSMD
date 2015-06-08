@@ -20,7 +20,9 @@
  
     "predef"        : [  // Custom globals.
         "THREE",
-	"Stats"
+	"Stats",
+	"SmoothieChart", //Smoothie stuff
+ 	"TimeSeries"
     ],
  
  
