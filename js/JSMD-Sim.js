@@ -19,7 +19,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
-    this.timestep = 0.01;
+    this.timestep = 0.005;
 
     //set-up listeners
     this.update_listeners = [];
@@ -31,7 +31,8 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.sigma=1.0;
     this.kb=1;
     this.T=1;
-    this.particle_radius = this.sigma * 150; 
+    this.particle_radius = this.sigma * 150;
+    this.chart = createTimeline();
     
 
 
@@ -185,7 +186,7 @@ Sim.prototype.minimum_distance=function(position1, position2){
 Sim.prototype.calculate_forces=function() {
     var i,j,k; //indices
     var pe = 0; //potential energy
-
+   
     //zero out the forces
     for(i = 0; i < this.positions.length; i++){
 	for(j = 0; j < 3; j++){
@@ -223,9 +224,12 @@ Sim.prototype.calculate_forces=function() {
 		var tmp = 24*(r[j])*this.epsilon * a * deno;
     	    	this.forces[i][j] += tmp;
 		this.forces[k][j] -= tmp;
+		
+		
 	    }
 	}
     }
+    
     return pe;
 }
 Sim.prototype.integrate=function(timestep){
@@ -257,7 +261,8 @@ Sim.prototype.integrate=function(timestep){
 	    mag_r = Math.sqrt(mag_r);	    
 	    PE += 4*this.epsilon*(Math.pow((this.sigma/mag_r),12)-Math.pow((this.sigma/mag_r),6));
 	    
-	}
+	    }
+    
 	var vel=0;
 	for(j = 0; j < 3; j++) {
 	
@@ -266,9 +271,10 @@ Sim.prototype.integrate=function(timestep){
 	
 	KE += 0.5*this.m*vel;
     }
-    var TE = KE+PE;*/
-  
-    
+        // var TE = KE+PE;
+    var te = (ke + this.pe);
+    console.log(this.pe)
+    update_plot(te,this.chart);*/
     //integrator
 
     for(i = 0; i <  this.positions.length; i++) {
@@ -279,11 +285,13 @@ Sim.prototype.integrate=function(timestep){
 	}	    	    	       
     }
     pe = this.calculate_forces();
+    
    
     for(i = 0; i <  this.positions.length; i++) {
+	
 	for(j = 0; j < 3; j++) {
 	    this.velocities[i][j] += 0.5*timestep*this.forces[i][j]/this.m;
-	    ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2))
+	   ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2));
 	}	    	    	       
     }
 
@@ -291,5 +299,5 @@ Sim.prototype.integrate=function(timestep){
 
 
 	
-      window.onload = new update_plot(te);
+    update_plot(te,ke,pe,this.chart);
 }
