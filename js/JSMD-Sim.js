@@ -130,7 +130,7 @@ function rounded(number){
 }
 Sim.prototype.min_image_dist=function(x1,x2){
     var change=x1-x2;
-    return(( change -rounded(change/this.box_dim.x)*this.box_dim.x) );
+    return ((change -rounded(change/this.box_dim.x)*this.box_dim.x) );
 }
 Sim.prototype.wrap=function(sos){
     return (sos-Math.floor(sos/this.box_dim.x)*this.box_dim.x);
@@ -150,9 +150,7 @@ Sim.prototype.render = function() {
 	this.particles.geom.verticesNeedUpdate = true;
     }
 }
-
 Sim.prototype.update = function() {
-
     //treat timing
     var delta = this.clock.getDelta();
     //target is 60 fps
@@ -160,9 +158,7 @@ Sim.prototype.update = function() {
     if(1.0 / delta > 60) {
 	timestep *= 60 * delta	
     }    
-
     //this is the actual simulation	
-	
     this.integrate(timestep);
 }
 Sim.prototype.minimum_distance=function(position1, position2){
@@ -170,63 +166,79 @@ Sim.prototype.minimum_distance=function(position1, position2){
     var difference2=position1-position2-Math.floor(difference)*this.box_dim.x;
     var dx2= this.box_dim.x-Math.abs(difference2);
     if (Math.abs(difference2)>dx2){
-	return (dx2);
+	return (Math.abs(dx2));
     }
     else {
 	return (Math.abs(difference2));
    }
 }
-
-    
+/*
+* This calculates the LJ force on each particle, updates the forces
+* array and computes total potential energy.
+*/
 Sim.prototype.calculate_forces=function() {
+    var i,j,k; //indices
+    var pe = 0; //potential energy
 
-    var i,j,k;
-
-   for(i = 0; i < this.positions.length; i++){
+    //zero out the forces
+    for(i = 0; i < this.positions.length; i++){
 	for(j = 0; j < 3; j++){
 	    this.forces[i][j] = 0;
 	}
     }
-    
-    var deno=Math.pow((this.sigma),2);    
-    for(i = 0; i < this.positions.length; i++) {
-	
-	
-	for(k = 0; k< this.positions.length && k !== i; k++) {	
-	  var r = [0,0,0];
-	  var mag_r = 0;
-	    for(j = 0; j < 3; j++) {
-		var d= this.wrap(this.positions[i][j]);
-		var b=this.wrap(this.positions[k][j]);
 
-		r[j] =this.min_image_dist(b,d);
+    var deno = 1.0 / (this.sigma * this.sigma);
+    for(i = 0; i < this.positions.length; i++) {
+	//for each particle
+	for(k = i+1; k< this.positions.length; k++) {
+	    //for each pair with the ith particle
+	    var r = [0,0,0];  //initialize r vector, which is distance between particles
+	    var mag_r=0 ; //The magnitude
+
+	    for(j = 0; j < 3; j++) {
+		//for each component of position
+
+		//compute the minimum image distance.
+		r[j] =this.min_image_dist(this.positions[i][j],this.positions[k][j]);
+		//add to growing sq magnitude
 		mag_r += r[j] * r[j];
 	    }
-	    mag_r = Math.sqrt(mag_r);	    
-	    var a=2*Math.pow((this.sigma/mag_r),14)-Math.pow((this.sigma/mag_r),8);
+
+	    //compute square root
+//	    mag_r = Math.sqrt(mag_r);
+
+	    //update pe
+	    pe += 4 * this.epsilon * (Math.pow(this.sigma * this.sigma / mag_r, 6) - Math.pow(this.sigma * this.sigma / mag_r, 3))
+	    //compute part of force calculation - a = 2 * (s^2 / r^2)^7 - 2 * (s^2 / r^2)^4
+	    var a = 2 * Math.pow((this.sigma * this.sigma/mag_r),7)-Math.pow((this.sigma * this.sigma/mag_r),4);
 	    for(j = 0; j < 3; j++) {
-    	    	this.forces[i][j]+=(-24)*(r[j])*this.epsilon * a/deno / mag_r; 
+		//compute per component force - -24 r_j e * a / s^2
+		var tmp = 24*(r[j])*this.epsilon * a * deno;
+    	    	this.forces[i][j] += tmp;
+		this.forces[k][j] -= tmp;
 	    }
 	}
     }
+    return pe;
 }
-
-
 Sim.prototype.integrate=function(timestep){
-
+    var ke=0;
+    var pe=0
     var i,j;
     for(i = 0; i <  this.positions.length; i++) {
 	for(j = 0; j < 3; j++) {
-	    this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);
+	    this.velocities[i][j]+=(0.5*timestep*this.forces[i][j]/this.m);
 	    this.positions[i][j]+=(0.5*timestep*this.velocities[i][j]);
 	    this.positions[i][j]=this.wrap(this.positions[i][j]);
 	}	    	    	       
     }
-    this.calculate_forces();
+    pe = this.calculate_forces();
+   
     for(i = 0; i <  this.positions.length; i++) {
 	for(j = 0; j < 3; j++) {
-	   this.velocities[i][j]=this.velocities[i][j]+(0.5*timestep*this.forces[i][j]/this.m);	     	     	   
+	    this.velocities[i][j] += 0.5*timestep*this.forces[i][j]/this.m;
+	    ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2))
 	}	    	    	       
     }
-
+    console.log(ke + pe)
 }
