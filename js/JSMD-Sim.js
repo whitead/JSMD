@@ -32,8 +32,9 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.kb=1;
     this.T=1;
     this.particle_radius = this.sigma * 150;
-    this.chart = createTimeline();
-    
+    var a = createTimeline();
+    this.chart = a[0];
+    this.tempchart = a[1];
 
 
     
@@ -299,5 +300,5 @@ Sim.prototype.integrate=function(timestep){
 
 
 	
-    update_plot(te,ke,pe,this.chart);
+    update_plot(te,ke,pe,this.chart, this.tempchart);
 }
