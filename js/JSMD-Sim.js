@@ -14,7 +14,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.box_dim = new THREE.Vector3(box_dim[0], box_dim[1], box_dim[2]);
     this.transform = new THREE.Matrix4();
     this.transform.makeScale(resolution, resolution, resolution);    
-
+    this.N = 4*4*4;
 
     //setup time
     this.clock = new THREE.Clock();
@@ -297,8 +297,9 @@ Sim.prototype.integrate=function(timestep){
     }
 
     var te = (ke + pe);
-
+    var t = 2*this.kb*ke/(3*this.N);
+    console.log(t);
 
 	
-    update_plot(te,ke,pe,this.chart, this.tempchart);
+    update_plot(te,ke,pe,t,this.chart, this.tempchart);
 }
