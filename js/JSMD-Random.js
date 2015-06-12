@@ -1,5 +1,6 @@
 // by Sean McCullough (banksean@gmail.com)
 // 25.December 2007
+//adapted to match wikipedia
 
 /** 
  * Javascript implementation of the Box-Muller transform.
@@ -13,24 +14,33 @@
  */
 function NormalDistribution(sigma, mu) {
 	return new Object({
-		sigma: sigma,
-		mu: mu,
-		sample: function() {
-			var res;
-			if (this.storedDeviate) {
-				res = this.storedDeviate * this.sigma + this.mu;
-				this.storedDeviate = null;
-			} else {
-				var dist = Math.sqrt(-1 * Math.log(Math.random()));
-				var angle = 2 * Math.PI * Math.random();
-				this.storedDeviate = dist*Math.cos(angle);
-				res = dist*Math.sin(angle) * this.sigma + this.mu;
-			}
-			return res;
-		},
-		sampleInt : function() {
-			return Math.round(this.sample());
+	    sigma: sigma,
+	    mu: mu,
+	    y1: 0,
+	    y2: 0,
+	    use_last: 0,
+	    sample: function() {
+		var x1, x2, w;
+		if (this.use_last) {		    
+		    this.y1 = this.y2;
+		    this.use_last = 0;
+		} else {
+		    do {
+			x1 = 2.0 * Math.random() - 1.0
+			x2 = 2.0 * Math.random() - 1.0
+			w = x1 * x1 + x2 * x2
+		    }while(w >= 1.0);
+
+		    w = Math.sqrt( -2.0 * Math.log( w )  / w);
+		    this.y1 = x1 * w;
+		    this.y2 = x2 * w;			    
+		    this.use_last = 1;
 		}
+		return this.mu + this.sigma * this.y1;
+	    },
+	    sampleInt : function() {
+		return Math.round(this.sample());
+	    }
 	});
 }
 

@@ -14,12 +14,12 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.box_dim = new THREE.Vector3(box_dim[0], box_dim[1], box_dim[2]);
     this.transform = new THREE.Matrix4();
     this.transform.makeScale(resolution, resolution, resolution);    
-    this.N = 4*4*4;
+
 
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
-    this.timestep = 0.005;
+    this.timestep = 0.02
 
     //set-up listeners
     this.update_listeners = [];
@@ -28,13 +28,14 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.m=1;
     this.epsilon=1;
 
-    this.sigma=1.0;
+    this.sigma=0.5;
     this.kb=1;
-    this.T=1;
+    this.T=1.3;
     this.particle_radius = this.sigma * 150;
     var a = createTimeline();
     this.chart = a[0];
     this.tempchart = a[1];
+    
 
 
     
@@ -90,11 +91,10 @@ Sim.prototype.init_render = function(scene) {
 
 	this.velocities = [];
 	this.forces = [];
-	var multFact= Math.sqrt(this.kb*this.T/this.m);
+	var sig= Math.sqrt(this.kb*this.T/this.m);
+	var nd = new NormalDistribution(sig,0); 
 	for(i = 0; i < this.positions.length; i++) {
-	   var nd = new NormalDistribution(1,0); 
-	    var randomFloat = nd.sample();
-	    this.velocities.push([nd.sample()*multFact, nd.sample()*multFact, nd.sample()*multFact]);
+	    this.velocities.push([nd.sample(), nd.sample(), nd.sample()]);
 	    this.forces.push([0, 0, 0]);
 	}
 	//create random ks
@@ -198,7 +198,7 @@ Sim.prototype.calculate_forces=function() {
     var deno = 1.0 / (this.sigma * this.sigma);
     for(i = 0; i < this.positions.length; i++) {
 	//for each particle
-	for(k = i+1; k< this.positions.length; k++) {
+	for(k = 0; k< this.positions.length && k!==i; k++) {
 	    //for each pair with the ith particle
 	    var r = [0,0,0];  //initialize r vector, which is distance between particles
 	    var mag_r=0 ; //The magnitude
@@ -277,6 +277,8 @@ Sim.prototype.integrate=function(timestep){
     console.log(this.pe)
     update_plot(te,this.chart);*/
     //integrator
+    
+   
 
     for(i = 0; i <  this.positions.length; i++) {
 	for(j = 0; j < 3; j++) {
@@ -291,15 +293,24 @@ Sim.prototype.integrate=function(timestep){
     for(i = 0; i <  this.positions.length; i++) {
 	
 	for(j = 0; j < 3; j++) {
+	   
 	    this.velocities[i][j] += 0.5*timestep*this.forces[i][j]/this.m;
-	   ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2));
+	    ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2));
+	  
 	}	    	    	       
     }
 
     var te = (ke + pe);
-    var t = 2*this.kb*ke/(3*this.N);
-    console.log(t);
+    var t = 2.0*ke/(3.0*this.positions.length * this.kb);    
+
+    for(i = 0; i <  this.positions.length; i++) {
+	
+	for(j = 0; j < 3; j++) {	    
+	    this.velocities[i][j] *= this.T / t;
+	}	    	    	       
+    }
 
 	
     update_plot(te,ke,pe,t,this.chart, this.tempchart);
 }
+
