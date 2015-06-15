@@ -10,9 +10,24 @@
     </head>
 
     <body>
+
+
+      <div class="left-chart">
+	<h2 class="chart-title"> Energy</h2>
+	<br/>
+	<canvas id="energy-chart" width="400" height="100"></canvas>
+      </div>
+
+      <h1 class="chart-title" id="main-title"> Javacsript Molecular Dynamics <br/> Lennard-Jones Fluid</h1>
+
+      <div class="right-chart">
+	<h2 class="chart-title"> Temperature</h2>
+	<br/>
+	<canvas id="temperature-chart" width="400" height="100"></canvas>
+      </div> 
       
-      <canvas id="chart" width="400" height="100"></canvas>
       <canvas id="tempchart" width="400" height="100"></canvas>
+      
       <div id="JSMD"></div>
 
       <script src="js/three.min.js"></script>
@@ -21,12 +36,14 @@
       <script src="js/smoothie.js"></script>
       <script src="js/base.js"></script>
 
+      <link href='http://fonts.googleapis.com/css?family=Dosis' rel='stylesheet' type='text/css'>
+
       <script>
 	window.onload = function() {
 	main();
 
     	}
-      </script>-->
+      </script>
 
     </body>
 

@@ -19,6 +19,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
+    this.steps = 0;
     this.timestep = 0.02
 
     //set-up listeners
@@ -33,8 +34,8 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.T=1.3;
     this.particle_radius = this.sigma * 150;
     var a = createTimeline();
-    this.chart = a[0];
-    this.tempchart = a[1];
+    this.energy_chart = a[0];
+    this.temperature_chart = a[1];
     
 
 
@@ -275,7 +276,7 @@ Sim.prototype.integrate=function(timestep){
         // var TE = KE+PE;
     var te = (ke + this.pe);
     console.log(this.pe)
-    update_plot(te,this.chart);*/
+    update_plot(te,this.energy_chart);*/
     //integrator
     
    
@@ -310,7 +311,10 @@ Sim.prototype.integrate=function(timestep){
 	}	    	    	       
     }
 
-	
-    update_plot(te,ke,pe,t,this.chart, this.tempchart);
+    this.time += timestep;
+    this.steps++;
+
+    if(this.steps % 100 === 0)
+	update_plot(te,ke,pe,t,this.energy_chart, this.temperature_chart);
 }
 

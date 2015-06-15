@@ -30,10 +30,10 @@ function Scene(elements, root) {
     //set-up the performance stats
     this.stats = new Stats();
     
-     // align top-left
+     // align bottom-left
     this.stats.domElement.style.position = 'absolute';
     this.stats.domElement.style.left = '0px';
-    this.stats.domElement.style.top = '0px';
+    this.stats.domElement.style.bottom = '0px';
     
     root.appendChild( this.stats.domElement );
 

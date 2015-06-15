@@ -1,28 +1,28 @@
-function update_plot(TE,KE,PE,Temp,chart,tempchart) {
+function update_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {
 
-    var chart_data1 = chart.seriesSet[0].timeSeries;
+    var chart_data1 = energy_chart.seriesSet[0].timeSeries;
     chart_data1.append(new Date().getTime(),TE);
-    var chart_data2 = chart.seriesSet[1].timeSeries;
+    var chart_data2 = energy_chart.seriesSet[1].timeSeries;
     chart_data2.append(new Date().getTime(),KE);
-    var chart_data3 = chart.seriesSet[2].timeSeries;
+    var chart_data3 = energy_chart.seriesSet[2].timeSeries;
     chart_data3.append(new Date().getTime(),PE);
-    var tempchart_data = tempchart.seriesSet[0].timeSeries;
-    tempchart_data.append(new Date().getTime(),Temp);
+    var temperature_chart_data = temperature_chart.seriesSet[0].timeSeries;
+    temperature_chart_data.append(new Date().getTime(),Temp);
 }
     
 /*Adds new data to the plot*/
 function createTimeline() {
-    var chart = new SmoothieChart();
-    var tempchart  = new SmoothieChart();
+    var energy_chart = new SmoothieChart();
+    var temperature_chart  = new SmoothieChart();
     var chart_data1 = new TimeSeries();
-    chart.addTimeSeries(chart_data1, { strokeStyle:'rgb(255, 0, 255)', lineWidth: 3 });
+    energy_chart.addTimeSeries(chart_data1, { strokeStyle:'rgb(255, 0, 255)', lineWidth: 3 });
     var chart_data2 = new TimeSeries();
-    chart.addTimeSeries(chart_data2, {strokeStyle:'rgba(0, 255, 0, 1)', lineWidth:3 });
+    energy_chart.addTimeSeries(chart_data2, {strokeStyle:'rgba(0, 255, 0, 1)', lineWidth:3 });
     var chart_data3 = new TimeSeries();
-    chart.addTimeSeries(chart_data3, { strokeStyle: 'rgba(255,255,0,1)', lineWidth: 3 });
-    var tempchart_data = new TimeSeries();
-    tempchart.addTimeSeries(tempchart_data, { strokeStyle:'rgb(255, 0, 0)', lineWidth: 3 });
-    chart.streamTo(document.getElementById("chart"), 500);
-    tempchart.streamTo(document.getElementById("tempchart"), 500);
-    return [chart,tempchart];
+    energy_chart.addTimeSeries(chart_data3, { strokeStyle: 'rgba(255,255,0,1)', lineWidth: 3 });
+    var temperature_chart_data = new TimeSeries();
+    temperature_chart.addTimeSeries(temperature_chart_data, { strokeStyle:'rgb(255, 0, 0)', lineWidth: 3 });
+    energy_chart.streamTo(document.getElementById("energy-chart"), 1000);
+    temperature_chart.streamTo(document.getElementById("temperature-chart"), 1000);
+    return [energy_chart,temperature_chart];
 }
