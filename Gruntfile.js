@@ -151,6 +151,13 @@ module.exports = function(grunt) {
 	    }
 	},
 
+	shell: {
+            target: {
+		//		command: 'rsync -r build/ awhite38@Enterprise.seas.rochester.edu:~/html'
+		command: 'rsync -r build/ andrewwh@andrew-white.com:~/public_html/white_lab/Apps/JSMD'
+            }
+	},
+	
 	//host the code
 	connect: {
 	    server: {
@@ -168,6 +175,6 @@ module.exports = function(grunt) {
     grunt.registerTask('html-dev', ['htmlhint', 'copy:htmldev', 'copy:assets']); 
     grunt.registerTask('html-prod', ['copy:htmlprod', 'copy:assets']); 
     grunt.registerTask('default', ['clean:build', 'js-dev', 'html-dev', 'less:dev', 'connect', 'watch']);
-    grunt.registerTask('production', ['clean:build', 'js-prod', 'html-prod','less:dev']);
+    grunt.registerTask('production', ['clean:build', 'js-prod', 'html-prod','less:dev', 'shell']);
     
 };
