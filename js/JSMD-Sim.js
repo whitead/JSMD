@@ -374,8 +374,11 @@ Sim.prototype.integrate=function(timestep){
 
     if(this.steps % 100 === 0){
 	update_plot(te,ke,pe,t,this.energy_chart, this.temperature_chart);
+    }
+    
+    if(this.steps % 10 === 0){
 	this.update_neighborlist();
     }
-
+     
 }
 
