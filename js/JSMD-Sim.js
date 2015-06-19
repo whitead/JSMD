@@ -35,7 +35,8 @@ function Sim(box_dim, viewwidth, viewheight) {
     var a = createTimeline();
     this.chart = a[0];
     this.tempchart = a[1];
-    
+    this.r_cut_sq=Math.pow(2.5*this.sigma, 2);
+    this.r_skin=Math.pow(3*this.sigma, 2);
 
 
     
@@ -47,10 +48,14 @@ Sim.prototype.add_update_listener = function(x) {
 
 Sim.prototype.set_positions = function(positions) {
     this.positions = positions;
+    
 }
+
 
 Sim.prototype.init_render = function(scene) {
     //draw simulation box
+    this.empty_neighbor();//empty neighbors list
+    this.update_neighborlist();//update the list
 
     var geomDim = this.box_dim.clone().applyMatrix4(this.transform);
     this.box = { 
@@ -97,6 +102,7 @@ Sim.prototype.init_render = function(scene) {
 	    this.velocities.push([nd.sample(), nd.sample(), nd.sample()]);
 	    this.forces.push([0, 0, 0]);
 	}
+
 	//create random ks
 
 	//this.ks = this.positions.map(function() {
@@ -108,10 +114,10 @@ Sim.prototype.init_render = function(scene) {
 	    return x.slice();
 	});
 	
-    }
-
+    }    
 };
-
+ 
+ 
 
 //this is the main loop
 Sim.prototype.animate = function() {
@@ -178,6 +184,49 @@ Sim.prototype.minimum_distance=function(position1, position2){
 	return (Math.abs(difference2));
    }
 }
+ 
+ 
+/*Creating neighbor list*/
+Sim.prototype.empty_neighbor=function(){
+    var i;
+    this.neighbor_array=new Array(this.positions.length);
+    for (i=0; i<this.positions.length; i++){
+	this.neighbor_array[i]=new Array(this.positions.length);
+    } 
+    return this.neighbor_array;
+}
+ 
+
+Sim.prototype.update_neighborlist=function(){
+    var i, j, k;
+   
+    for(i=0; i<this.positions.length; i++){
+	var l=0;
+	for (k=0; k<this.positions.length ; k++){
+	    if (k<=i){
+		continue;
+	    }
+	   
+	    //var m=0;
+	    var differ=[0,0,0];
+	    var differ_sq=0;
+	    for(j=0; j<3; j++){
+		differ[j]=this.min_image_dist(this.positions[i][j],this.positions[k][j]);
+		differ_sq+=differ[j]*differ[j];
+	    }
+	 
+	    if(differ_sq<=this.r_skin){
+		this.neighbor_array[i][l]=k;
+		l+=1;
+	    }
+	}
+	this.neighbor_array[i][l]=-1;
+    }
+    return this.neighbor_array;
+}
+
+
+
 
 /*
 * This calculates the LJ force on each particle, updates the forces
@@ -189,18 +238,22 @@ Sim.prototype.calculate_forces=function() {
     var pe = 0; //potential energy
    
     //zero out the forces
-    for(i = 0; i < this.positions.length; i++){
+    for(i = 0; i < this.neighbor_array.length; i++){
 	for(j = 0; j < 3; j++){
 	    this.forces[i][j] = 0;
 	}
     }
-
+    
     var deno = 1.0 / (this.sigma * this.sigma);
-    for(i = 0; i < this.positions.length; i++) {
+    for(i = 0; i < this.neighbor_array.length; i++) {
 	//for each particle
-	for(k = 0; k< this.positions.length && k!==i; k++) {
+	for(k = 0; k< this.neighbor_array[i].length; k++) {
+	    if(this.neighbor_array[i][k]===-1){
+		break;}
 	    //for each pair with the ith particle
 	    var r = [0,0,0];  //initialize r vector, which is distance between particles
+	    
+	    var small_r=0 ;
 	    var mag_r=0 ; //The magnitude
 
 	    for(j = 0; j < 3; j++) {
@@ -208,14 +261,13 @@ Sim.prototype.calculate_forces=function() {
 		//for each component of position
 
 		//compute the minimum image distance.
-		r[j] =this.min_image_dist(this.positions[i][j],this.positions[k][j]);
+		//console.log(this.neighbor_array[i][k])
+		r[j] =this.min_image_dist(this.positions[i][j],this.positions[this.neighbor_array[i][k]][j]);
 		//add to growing sq magnitude
 		mag_r += r[j] * r[j];
 	    }
-
-	    //compute square root
-//	    mag_r = Math.sqrt(mag_r);
-
+	    if (mag_r<=this.r_cut_sq){
+		
 	    //update pe
 	    pe += 4 * this.epsilon * (Math.pow(this.sigma * this.sigma / mag_r, 6) - Math.pow(this.sigma * this.sigma / mag_r, 3))
 	    //compute part of force calculation - a = 2 * (s^2 / r^2)^7 - 2 * (s^2 / r^2)^4
@@ -224,21 +276,23 @@ Sim.prototype.calculate_forces=function() {
 		//compute per component force - -24 r_j e * a / s^2
 		var tmp = 24*(r[j])*this.epsilon * a * deno;
     	    	this.forces[i][j] += tmp;
-		this.forces[k][j] -= tmp;
-		
-		
+		this.forces[this.neighbor_array[i][k]][j] -= tmp;
+	    }
 	    }
 	}
-    }
     
+
+    }
+
     return pe;
 }
+
 Sim.prototype.integrate=function(timestep){
 
     var ke=0;
-    var pe=0
+    var pe=0;
     var i,j;
-
+    //this.empty_neighbor();
    
   
     // Calculation of total energy
@@ -309,8 +363,8 @@ Sim.prototype.integrate=function(timestep){
 	    this.velocities[i][j] *= this.T / t;
 	}	    	    	       
     }
-
-	
+    
+    this.update_neighborlist();
     update_plot(te,ke,pe,t,this.chart, this.tempchart);
 }
 
