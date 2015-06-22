@@ -1,3 +1,5 @@
+
+/*Adds new data to the plot*/
 function update_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {
 
     var chart_data1 = energy_chart.seriesSet[0].timeSeries;
@@ -10,7 +12,7 @@ function update_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {
     temperature_chart_data.append(new Date().getTime(),Temp);
 }
     
-/*Adds new data to the plot*/
+/*Creates new plot*/
 function createTimeline() {
     var energy_chart = new SmoothieChart();
     var temperature_chart  = new SmoothieChart();

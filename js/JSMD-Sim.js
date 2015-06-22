@@ -28,13 +28,14 @@ function Sim(box_dim, viewwidth, viewheight) {
     //set-up simulation stuff
     this.m=1;
     this.epsilon=1;
-
+    
     this.sigma=0.5;
     this.kb=1;
     this.T=1.3;
     this.particle_radius = this.sigma * 150;
+    
+    //For the plots
     var a = createTimeline();
-
     this.energy_chart = a[0];
     this.temperature_chart = a[1];
 
@@ -100,6 +101,7 @@ Sim.prototype.init_render = function(scene) {
 
 	this.velocities = [];
 	this.forces = [];
+	//Creating normally distributed x,y and z velocities
 	var sig= Math.sqrt(this.kb*this.T/this.m);
 	var nd = new NormalDistribution(sig,0); 
 	for(i = 0; i < this.positions.length; i++) {
@@ -303,37 +305,7 @@ Sim.prototype.integrate=function(timestep){
     // var i,j,k;
     
   
-  /*  var deno=Math.pow((this.sigma),2);    
-    for(i = 0; i < this.positions.length; i++) {
-	
-	
-	for(k = 0; k< this.positions.length && k !== i; k++) {	
-	  var r = [0,0,0];
-	  var mag_r = 0;
-	    for(j = 0; j < 3; j++) {
-		var d= this.wrap(this.positions[i][j]);
-		var b=this.wrap(this.positions[k][j]);
 
-		r[j] =this.min_image_dist(b,d);
-		mag_r += r[j] * r[j];
-	    }
-	    mag_r = Math.sqrt(mag_r);	    
-	    PE += 4*this.epsilon*(Math.pow((this.sigma/mag_r),12)-Math.pow((this.sigma/mag_r),6));
-	    
-	    }
-    
-	var vel=0;
-	for(j = 0; j < 3; j++) {
-	
-	    vel += Math.pow(this.velocities[i][j],2);
-	}
-	
-	KE += 0.5*this.m*vel;
-    }
-        // var TE = KE+PE;
-    var te = (ke + this.pe);
-    console.log(this.pe)
-    update_plot(te,this.energy_chart);*/
     //integrator
     
    
@@ -357,8 +329,9 @@ Sim.prototype.integrate=function(timestep){
 	  
 	}	    	    	       
     }
-
+    //calculates total force
     var te = (ke + pe);
+    //calculates temperature from kinetic energy
     var t = 2.0*ke/(3.0*this.positions.length * this.kb);    
 
     for(i = 0; i <  this.positions.length; i++) {
