@@ -1,6 +1,8 @@
 
 /*
 * box_dim : a THREE.Vector3 specifying the box dimension 
+* viewwidth: How wide to make the viewable width
+* viewheight: How wide to make the viewable width
 */
 
 function Sim(box_dim, viewwidth, viewheight) {
@@ -15,15 +17,17 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.transform = new THREE.Matrix4();
     this.transform.makeScale(resolution, resolution, resolution);    
 
-
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
     this.steps = 0;
     this.timestep = 0.02
 
+    this.scene = null;
+
     //set-up listeners
     this.update_listeners = [];
+    this.extra_meshes = []
 
     //set-up simulation stuff
     this.m=1;
@@ -39,29 +43,49 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.energy_chart = a[0];
     this.temperature_chart = a[1];
 
-    this.r_cut_sq=Math.pow(2.5*this.sigma, 2);
-    this.r_skin=Math.pow(3*this.sigma, 2);
+    this.r_cut_sq=Math.pow(2.0*this.sigma, 2);
+    this.r_skin=Math.pow(2.5*this.sigma, 2);
 
-
-
-    
 }
 
+/*
+* Add an object whose update method will be called on each simulation update
+*/
 Sim.prototype.add_update_listener = function(x) {
     this.update_listeners.push(x);
 }
 
-Sim.prototype.set_positions = function(positions) {
-    this.positions = positions;
+/*
+ * Add a mesh whose position will be updated to be correctly wrapped
+ * and displayed in simulation coordinates
+ */
+Sim.prototype.add_mesh = function(m) {
+    this.scene.add(m);
+    this.extra_meshes.push(m);
     
+}
+
+/*
+* Remove a mesh added by add_mesh(). The argument is the mesh that
+* was returned when add_mesh was called.
+*/
+Sim.prototype.remove_mesh = function(m) {
+    var index = this.extra_meshes.indexOf(m);
+    this.scene.remove(this.extra_meshes[index]);
+    this.extra_meshes.splice(index, 1);
+}
+
+
+Sim.prototype.set_positions = function(positions) {
+    this.positions = positions;    
 }
 
 
 Sim.prototype.init_render = function(scene) {
-    //draw simulation box
     this.empty_neighbor();//empty neighbors list
     this.update_neighborlist();//update the list
 
+    //draw simulation box
     var geomDim = this.box_dim.clone().applyMatrix4(this.transform);
     this.box = { 
 	'geom': new THREE.BoxGeometry(geomDim.x, geomDim.y, geomDim.z),
@@ -108,28 +132,21 @@ Sim.prototype.init_render = function(scene) {
 	    this.velocities.push([nd.sample(), nd.sample(), nd.sample()]);
 	    this.forces.push([0, 0, 0]);
 	}
-
-	//create random ks
-
-	//this.ks = this.positions.map(function() {
-	    //return 0.75 + 0.05 * Math.random();	    
-	
-
-	//create initial positions of them
-	this.r0 = this.positions.map(function(x) {
-	    return x.slice();
-	});
-	
-    }    
+    }
+    
+    this.scene = scene;
 };
  
  
 
 //this is the main loop
 Sim.prototype.animate = function() {
+    this.update();
     //treat listeners
-//    this.update_listeners.forEach(function(x) {x.update()});
-    this.update();   
+    var that = this
+    for(var i = 0; i < this.update_listeners.length; i++)	
+	this.update_listeners[i].update(that);
+
     this.render();
 
 }
@@ -155,16 +172,23 @@ Sim.prototype.wrap=function(sos){
 
 Sim.prototype.render = function() {
     //this is where the rendering takes place
+    var i, j;
     
     if(this.particles) {
-	for(var i = 0; i < this.positions.length; i++) {
-	    this.particles.geom.vertices[i].x = this.resolution * (this.wrap(this.positions[i][0]) - this.box_dim.x / 2);
-								 
+	for(i = 0; i < this.positions.length; i++) {
+	    this.particles.geom.vertices[i].x = this.resolution * (this.wrap(this.positions[i][0]) - this.box_dim.x / 2);								 
 	    this.particles.geom.vertices[i].y = this.resolution * (this.wrap(this.positions[i][1]) - this.box_dim.y / 2);
 	    this.particles.geom.vertices[i].z = this.resolution * (this.wrap(this.positions[i][2]) - this.box_dim.z / 2);
 	}
 	this.particles.geom.verticesNeedUpdate = true;
     }
+
+    for(i = 0; i < this.extra_meshes.length; i++) {
+	this.extra_meshes[i].position.x = this.resolution * (this.wrap(this.extra_meshes[i].position.x) - this.box_dim.x / 2);
+	this.extra_meshes[i].position.y = this.resolution * (this.wrap(this.extra_meshes[i].position.y) - this.box_dim.y / 2);
+	this.extra_meshes[i].position.z = this.resolution * (this.wrap(this.extra_meshes[i].position.z) - this.box_dim.z / 2);
+    }
+
 }
 Sim.prototype.update = function() {
     //treat timing
@@ -208,12 +232,8 @@ Sim.prototype.update_neighborlist=function(){
    
     for(i=0; i<this.positions.length; i++){
 	var l=0;
-	for (k=0; k<this.positions.length ; k++){
-	    if (k<=i){
-		continue;
-	    }
-	   
-	    //var m=0;
+	for (k=i + 1; k<this.positions.length ; k++){
+ 	    //var m=0;
 	    var differ=[0,0,0];
 	    var differ_sq=0;
 	    for(j=0; j<3; j++){
@@ -244,7 +264,7 @@ Sim.prototype.calculate_forces=function() {
     var pe = 0; //potential energy
    
     //zero out the forces
-    for(i = 0; i < this.neighbor_array.length; i++){
+    for(i = 0; i < this.forces.length; i++){
 	for(j = 0; j < 3; j++){
 	    this.forces[i][j] = 0;
 	}
@@ -274,22 +294,22 @@ Sim.prototype.calculate_forces=function() {
 	    }
 	    if (mag_r<=this.r_cut_sq){
 		
-	    //update pe
-	    pe += 4 * this.epsilon * (Math.pow(this.sigma * this.sigma / mag_r, 6) - Math.pow(this.sigma * this.sigma / mag_r, 3))
-	    //compute part of force calculation - a = 2 * (s^2 / r^2)^7 - 2 * (s^2 / r^2)^4
-	    var a = 2 * Math.pow((this.sigma * this.sigma/mag_r),7)-Math.pow((this.sigma * this.sigma/mag_r),4);
-	    for(j = 0; j < 3; j++) {
-		//compute per component force - -24 r_j e * a / s^2
-		var tmp = 24*(r[j])*this.epsilon * a * deno;
-    	    	this.forces[i][j] += tmp;
-		this.forces[this.neighbor_array[i][k]][j] -= tmp;
-	    }
+		//update pe
+		pe += 4 * this.epsilon * (Math.pow(this.sigma * this.sigma / mag_r, 6) - Math.pow(this.sigma * this.sigma / mag_r, 3))
+		//compute part of force calculation - a = 2 * (s^2 / r^2)^7 - 2 * (s^2 / r^2)^4
+		var a = 2 * Math.pow((this.sigma * this.sigma/mag_r),7)-Math.pow((this.sigma * this.sigma/mag_r),4);
+		for(j = 0; j < 3; j++) {
+		    //compute per component force - -24 r_j e * a / s^2
+		    var tmp = 24*(r[j])*this.epsilon * a * deno;
+    	    	    this.forces[i][j] += tmp;
+		    this.forces[this.neighbor_array[i][k]][j] -= tmp;
+		}
 	    }
 	}
-    
-
+	
+	
     }
-
+    
     return pe;
 }
 
@@ -298,14 +318,6 @@ Sim.prototype.integrate=function(timestep){
     var ke=0;
     var pe=0;
     var i,j;
-    //this.empty_neighbor();
-   
-  
-    // Calculation of total energy
-    // var i,j,k;
-    
-  
-
     //integrator
     
    
