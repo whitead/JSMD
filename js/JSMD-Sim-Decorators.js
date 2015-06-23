@@ -3,7 +3,7 @@ function NeighborDrawer(sim, scene, index) {
     this.index = index;
 
     var m = new THREE.MeshBasicMaterial( { wireframe: true, wireframeLineWidth: 0, color:0x44EE22} );
-    this.neighbor_material = new THREE.MeshBasicMaterial( { wireframe: true, wireframeLineWidth: 0, color:0x339999} );
+    this.neighbor_material = new THREE.MeshBasicMaterial( { wireframe: true, wireframeLineWidth: 0, color:0xFF00EF} );
 
     
     this.sphere_geom = new THREE.SphereGeometry(sim.particle_radius * 0.3, 12, 12);
