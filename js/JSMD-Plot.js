@@ -24,7 +24,7 @@ function createTimeline() {
     energy_chart.addTimeSeries(chart_data3, { strokeStyle: 'rgba(255,255,0,1)', lineWidth: 3 });
     var temperature_chart_data = new TimeSeries();
     temperature_chart.addTimeSeries(temperature_chart_data, { strokeStyle:'rgb(255, 0, 0)', lineWidth: 3 });
-    energy_chart.streamTo(document.getElementById("energy-chart"), 1000);
-    temperature_chart.streamTo(document.getElementById("temperature-chart"), 1000);
+    energy_chart.streamTo(document.getElementById("energy-chart"), 3000);
+    temperature_chart.streamTo(document.getElementById("temperature-chart"), 3000);
     return [energy_chart,temperature_chart];
 }

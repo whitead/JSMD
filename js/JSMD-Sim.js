@@ -22,6 +22,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.time = 0;
     this.steps = 0;
     this.timestep = 0.02
+    this.pause = false;
 
     this.scene = null;
 
@@ -35,7 +36,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     
     this.sigma=0.5;
     this.kb=1;
-    this.T=1.3;
+    this.T=1.1;
     this.particle_radius = this.sigma * 150;
     
     //For the plots
@@ -63,6 +64,10 @@ Sim.prototype.add_mesh = function(m) {
     this.scene.add(m);
     this.extra_meshes.push(m);
     
+}
+
+Sim.prototype.toggle_pause = function() {
+    this.pause = !this.pause;
 }
 
 /*
@@ -315,53 +320,55 @@ Sim.prototype.calculate_forces=function() {
 
 Sim.prototype.integrate=function(timestep){
 
+
     var ke=0;
     var pe=0;
     var i,j;
-    //integrator
     
-   
-
-    for(i = 0; i <  this.positions.length; i++) {
-	for(j = 0; j < 3; j++) {
-	    this.velocities[i][j]+=(0.5*timestep*this.forces[i][j]/this.m);
-	    this.positions[i][j]+=(0.5*timestep*this.velocities[i][j]);
-	    this.positions[i][j]=this.wrap(this.positions[i][j]);
-	}	    	    	       
+    //integrator
+    if(!this.pause) {
+	for(i = 0; i <  this.positions.length; i++) {
+	    for(j = 0; j < 3; j++) {
+		this.velocities[i][j]+=(0.5*timestep*this.forces[i][j]/this.m);
+		this.positions[i][j]+=(0.5*timestep*this.velocities[i][j]);
+		this.positions[i][j]=this.wrap(this.positions[i][j]);
+	    }	    	    	       
+	}
     }
     pe = this.calculate_forces();
     
-   
     for(i = 0; i <  this.positions.length; i++) {
 	
 	for(j = 0; j < 3; j++) {
-	   
-	    this.velocities[i][j] += 0.5*timestep*this.forces[i][j]/this.m;
+	    if(!this.pause)
+		this.velocities[i][j] += 0.5*timestep*this.forces[i][j]/this.m;
 	    ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2));
-	  
+	    
 	}	    	    	       
     }
+
+    
     //calculates total force
     var te = (ke + pe);
     //calculates temperature from kinetic energy
     var t = 2.0*ke/(3.0*this.positions.length * this.kb);    
 
-    for(i = 0; i <  this.positions.length; i++) {
+    if(!this.pause) {
+	for(i = 0; i <  this.positions.length; i++) {	
+	    for(j = 0; j < 3; j++) {	    
+		this.velocities[i][j] *= this.T / t;
+	    }	    	    	       
+	}
 	
-	for(j = 0; j < 3; j++) {	    
-	    this.velocities[i][j] *= this.T / t;
-	}	    	    	       
+	this.time += timestep;
+	this.steps++;
     }
-
-
-    this.time += timestep;
-    this.steps++;
-
-    if(this.steps % 100 === 0){
+    
+    if(this.pause || this.steps % 100 === 0){
 	update_plot(te,ke,pe,t,this.energy_chart, this.temperature_chart);
     }
     
-    if(this.steps % 10 === 0){
+    if(!this.pause && this.steps % 10 === 0){
 	this.update_neighborlist();
     }
      
