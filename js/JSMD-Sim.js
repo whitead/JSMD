@@ -43,8 +43,8 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.energy_chart = a[0];
     this.temperature_chart = a[1];
 
-    this.r_cut_sq=Math.pow(2.0*this.sigma, 2);
-    this.r_skin=Math.pow(2.5*this.sigma, 2);
+    this.r_cut_sq=Math.pow(2.0*this.sigma, 2);//radius of the cut off range
+    this.r_skin=Math.pow(2.5*this.sigma, 2);//radius of the skin
 
 }
 
@@ -153,19 +153,19 @@ Sim.prototype.animate = function() {
 
 function rounded(number){
     if(number<0){
-        return (Math.ceil(number-0.5));
+        return (Math.ceil(number-0.5));// rounds a number to the nearest digit
     }
     else{
         return (Math.floor(number+0.5));
     }
 }
-Sim.prototype.min_image_dist=function(x1,x2){
+Sim.prototype.min_image_dist=function(x1,x2){//calculates the minimum image distance between two positions
     var change=x1-x2;
 
     return ((change -rounded(change/this.box_dim.x)*this.box_dim.x) );
 
 }
-Sim.prototype.wrap=function(sos){
+Sim.prototype.wrap=function(sos){//puts a particle inside the box
     return (sos-Math.floor(sos/this.box_dim.x)*this.box_dim.x);
 }
 
@@ -201,7 +201,7 @@ Sim.prototype.update = function() {
     //this is the actual simulation	
     this.integrate(timestep);
 }
-Sim.prototype.minimum_distance=function(position1, position2){
+Sim.prototype.minimum_distance=function(position1, position2){// an alternative method to calculate the distance between two particles
     var difference=(position1-position2)/this.box_dim.x;
     var difference2=position1-position2-Math.floor(difference)*this.box_dim.x;
     var dx2= this.box_dim.x-Math.abs(difference2);
@@ -219,36 +219,36 @@ Sim.prototype.minimum_distance=function(position1, position2){
 /*Creating neighbor list*/
 Sim.prototype.empty_neighbor=function(){
     var i;
-    this.neighbor_array=new Array(this.positions.length);
+    this.neighbor_array=new Array(this.positions.length);//creates a 1 D array of length of the positions
     for (i=0; i<this.positions.length; i++){
-	this.neighbor_array[i]=new Array(this.positions.length);
+	this.neighbor_array[i]=new Array(this.positions.length);//creates NxN array 
     } 
     return this.neighbor_array;
 }
  
-
+/*Updating the neighbor's list for atoms within the skin of the particle*/
 Sim.prototype.update_neighborlist=function(){
     var i, j, k;
    
-    for(i=0; i<this.positions.length; i++){
+    for(i=0; i<this.positions.length; i++){//loops for the length of the rows of the neighbor's list
 	var l=0;
-	for (k=i + 1; k<this.positions.length ; k++){
+	for (k=i + 1; k<this.positions.length ; k++){//loops for the length of the columns of the neighbor's list
  	    //var m=0;
 	    var differ=[0,0,0];
 	    var differ_sq=0;
 	    for(j=0; j<3; j++){
-		differ[j]=this.min_image_dist(this.positions[i][j],this.positions[k][j]);
-		differ_sq+=differ[j]*differ[j];
+		differ[j]=this.min_image_dist(this.positions[i][j],this.positions[k][j]);//calculates the minimum image distance
+		differ_sq+=differ[j]*differ[j];//calculates the magnitude of diffrence in three dimensions
 	    }
 	 
-	    if(differ_sq<=this.r_skin){
-		this.neighbor_array[i][l]=k;
-		l+=1;
+	    if(differ_sq<=this.r_skin){//checks whether distance between particles is smaller than the skin
+		this.neighbor_array[i][l]=k;//populates the neighbor's list with the actual particles.
+		l+=1;//keeps track of atoms that are inside the neighbor's list
 	    }
 	}
-	this.neighbor_array[i][l]=-1;
+	this.neighbor_array[i][l]=-1;//if a particle is outside of the skin, then we put -1 to represent that it is outside of the box
     }
-    return this.neighbor_array;
+    return this.neighbor_array;//returns the neihgbor's list
 }
 
 
