@@ -40,3 +40,56 @@ body {
        z-index: 99;
        top: 0px;
 }
+
+#control-panel {
+  position:absolute;  
+  right: 25px;
+  z-index: 99;
+  bottom:25px;
+  background-color: rgba(50, 50, 50, 0.8);
+  padding-top:20px;
+  padding-bottom:20px;
+  padding-left: 10px;
+  padding-right: 10px;
+  min-width:100px;
+  box-shadow: 0px 0px 5px #888888;
+//  border: 2px solid;
+  border-radius: 3px;
+  text-align: center;
+}
+
+#control-panel h3 {
+   margin-top:0px; 	       
+}
+
+
+button {
+ border: 1px solid transparent;
+ white-space: nowrap;
+ vertical-align: middle;
+ box-shadow(inset 0 3px 5px rgba(0,0,0,.125));
+ 
+   &:hover,
+  &:focus,
+  &.focus {
+    color: #333;
+    text-decoration: none;
+  }
+
+  &:active,
+  &.active {
+    outline: 0;
+    background-image: none;
+    box-shadow(inset 0 3px 5px rgba(0,0,0,.125));
+  }
+
+  &.disabled,
+  &[disabled],
+  fieldset[disabled] & {
+    pointer-events: none; // Future-proof disabling of clicks
+    opacity(.65);
+    box-shadow(none);
+  }
+
+
+}
