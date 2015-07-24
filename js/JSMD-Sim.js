@@ -22,7 +22,7 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.time = 0;
     this.steps = 0;
     this.timestep = 0.02
-    this.pause = false;
+    this.pause = true;
 
     this.scene = null;
 
@@ -34,9 +34,9 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.m=1;
     this.epsilon=1;
     
-    this.sigma=0.5;
+    this.sigma=0.5;//put a slider here to adjust sigma value, see more/less neighbors
     this.kb=1;
-    this.T=1.1;
+    this.T=1.1; //add get command for slider here, make this default temp
     this.particle_radius = this.sigma * 150;
     
     //For the plots

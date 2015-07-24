@@ -2,10 +2,13 @@ function Scene(elements, root) {
 
     this.elements = elements;
 
+    //this.container = document.createElement( 'div' );
+    //document.body.appendChild( root );
+
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     this.camera.position.z = Math.min(window.innerWidth, window.innerHeight);
 
-    this.controls = new THREE.OrbitControls( this.camera );
+    this.controls = new THREE.OrbitControls( this.camera, root );
     this.controls.damping = 0.2;
 //    this.controls.maxPolarAngle = Math.PI / 2;
 //    this.controls.minAzimuthAngle = -Math.PI / 2;
