@@ -5,9 +5,11 @@
 * viewheight: How wide to make the viewable width
 */
 
-function Sim(box_dim, viewwidth, viewheight) {
+var dim_names = ['x', 'y', 'z']
+
+function Sim(box_dim, viewwidth, viewheight, two_dimension) {
     
-    //lazy longest diagonal
+    //longest diagonal
     var max = 0;
     box_dim.forEach(function(x) {max = Math.max(max, x)});
     var resolution = Math.min(viewwidth, viewheight) / (max * Math.sqrt(3))
@@ -15,7 +17,8 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.resolution = resolution;
     this.box_dim = new THREE.Vector3(box_dim[0], box_dim[1], box_dim[2]);
     this.transform = new THREE.Matrix4();
-    this.transform.makeScale(resolution, resolution, resolution);    
+    this.transform.makeScale(resolution, resolution, resolution);
+    this.two_dimension = two_dimension || false;
 
     //setup time
     this.clock = new THREE.Clock();
@@ -44,8 +47,13 @@ function Sim(box_dim, viewwidth, viewheight) {
     this.energy_chart = a[0];
     this.temperature_chart = a[1];
 
-    this.r_cut_sq=Math.pow(2.0*this.sigma, 2);//radius of the cut off range
-    this.r_skin=Math.pow(2.5*this.sigma, 2);//radius of the skin
+//    this.r_cut_sq=Math.pow(2.0*this.sigma, 2);//radius of the cut off range
+    //    this.r_skin=Math.pow(2.5*this.sigma, 2);//radius of the skin
+//    this.r_cut_sq=Math.pow(3.0*this.sigma, 2);//radius of the cut off range
+//    this.r_skin=Math.pow(3.5*this.sigma, 2);//radius of the skin
+    this.r_cut_sq=Math.pow(6.0*this.sigma, 2);//radius of the cut off range
+    this.r_skin=Math.pow(7.0*this.sigma, 2);//radius of the skin
+
 
 }
 
@@ -91,16 +99,34 @@ Sim.prototype.init_render = function(scene) {
     this.update_neighborlist();//update the list
 
     //draw simulation box
-    var geomDim = this.box_dim.clone().applyMatrix4(this.transform);
-    this.box = { 
-	'geom': new THREE.BoxGeometry(geomDim.x, geomDim.y, geomDim.z),
-	'material': new THREE.MeshBasicMaterial({
-           color:  0xff0000,
-            wireframe: true
-	})};
+    if(this.two_dimension) {
+	
+	var shape = new THREE.Shape();
+	shape.moveTo( -this.box_dim.x/2, -this.box_dim.y / 2 );
+	shape.lineTo( -this.box_dim.x/2, this.box_dim.y/2 );
+	shape.lineTo( this.box_dim.x/2, this.box_dim.y/2 );
+	shape.lineTo( this.box_dim.x/2, -this.box_dim.y /2 );
+//	shape.lineTo( 0, 0 );
+	shape.autoClose =  true;
+	var line = new THREE.Line( shape.createPointsGeometry(),
+				   new THREE.LineBasicMaterial( {
+				       color: 0x777777, linewidth: 3
+				   } ) );
+	line.applyMatrix(this.transform);
+	scene.add(line);
+    }
+    else{
+	var geomDim = this.box_dim.clone().applyMatrix4(this.transform);
+	this.box = { 
+	    'geom': new THREE.BoxGeometry(geomDim.x, geomDim.y, geomDim.z),
+	    'material': new THREE.MeshBasicMaterial({
+		color:  0xff0000,
+		wireframe: true
+	    })};
+	this.box.mesh = new THREE.Mesh(this.box.geom, this.box.material);
+	scene.add(this.box.mesh);	
+    }
 
-    this.box.mesh = new THREE.Mesh(this.box.geom, this.box.material);
-    scene.add(this.box.mesh);
 
 
     //if we have positions, then we render them
@@ -108,11 +134,31 @@ Sim.prototype.init_render = function(scene) {
 	//create the geometric
 	this.particles = {
 	    'geom': new THREE.Geometry(),
-	    'sprite': THREE.ImageUtils.loadTexture('assets/textures/ball.png')
 	}
 	//create the particle, set it transparent (so we can see through the png transparency) and color it
-	this.particles.mat = new THREE.PointCloudMaterial( { size: this.particle_radius, sizeAttenuation: true, blending: THREE.Additive, map: this.particles.sprite, transparent: true, alphaTest: 0.5 } );
-	this.particles.mat.color.setRGB( 0.0, 0.1, 1.0 );
+	this.particles.mat = new THREE.PointsMaterial( { size: this.particle_radius, sizeAttenuation: true, transparent: true, alphaTest: 0.5 } );
+	this.particles.mat.color.setHSL( 1.0, 0.4, 0.5 );
+	//this.particles.mat.blending =  THREE.AdditiveBlending;
+
+	
+	var loader = new THREE.TextureLoader();
+	var _this = this;
+	var url = 'assets/textures/ball.png';
+	if(this.two_dimension)
+	    url = 'assets/textures/disc.png';
+	
+	loader.load(url, function(x) {
+	    
+	    _this.particles.sprite = x;
+	    _this.particles.mat.map = x;
+
+	    //actually add the particles to the scene now
+	    //Store the geometry with the particles and make sure our sorting matches
+	    _this.particles.cloud = new THREE.Points(_this.particles.geom, _this.particles.mat);
+	    _this.particles.sortParticles = true;
+	    scene.add(_this.particles.cloud);	    
+	});
+	
 
 	//now, we place vertices at each of the positions
 	for(var i = 0; i < this.positions.length; i++) {
@@ -120,21 +166,17 @@ Sim.prototype.init_render = function(scene) {
 	    this.particles.geom.vertices.push(vertex);	    
 	}
 
-
-	//Store the geometry with the particles and make sure our sorting matches
-	this.particles.cloud = new THREE.PointCloud(this.particles.geom, this.particles.mat);
-	this.particles.sortParticles = true;
-	scene.add(this.particles.cloud);
-
 	//Creaete some velocities and positions
-
 	this.velocities = [];
 	this.forces = [];
 	//Creating normally distributed x,y and z velocities
 	var sig= Math.sqrt(this.kb*this.T/this.m);
 	var nd = new NormalDistribution(sig,0); 
 	for(i = 0; i < this.positions.length; i++) {
-	    this.velocities.push([nd.sample(), nd.sample(), nd.sample()]);
+	    if(this.two_dimension)
+		this.velocities.push([nd.sample(), nd.sample(), 0]);
+	    else
+		this.velocities.push([nd.sample(), nd.sample(), nd.sample()]);
 	    this.forces.push([0, 0, 0]);
 	}
     }
@@ -164,14 +206,13 @@ function rounded(number){
         return (Math.floor(number+0.5));
     }
 }
-Sim.prototype.min_image_dist=function(x1,x2){//calculates the minimum image distance between two positions
+Sim.prototype.min_image_dist=function(x1,x2, dim){//calculates the minimum image distance between two positions
     var change=x1-x2;
-
-    return ((change -rounded(change/this.box_dim.x)*this.box_dim.x) );
+    return ((change -rounded(change/this.box_dim[dim_names[dim]])*this.box_dim[dim_names[dim]]) );
 
 }
-Sim.prototype.wrap=function(sos){//puts a particle inside the box
-    return (sos-Math.floor(sos/this.box_dim.x)*this.box_dim.x);
+Sim.prototype.wrap=function(x, dim){//puts a particle inside the box
+    return (x-Math.floor(x/this.box_dim[dim_names[dim]])*this.box_dim[dim_names[dim]]);
 }
 
 
@@ -181,17 +222,17 @@ Sim.prototype.render = function() {
     
     if(this.particles) {
 	for(i = 0; i < this.positions.length; i++) {
-	    this.particles.geom.vertices[i].x = this.resolution * (this.wrap(this.positions[i][0]) - this.box_dim.x / 2);								 
-	    this.particles.geom.vertices[i].y = this.resolution * (this.wrap(this.positions[i][1]) - this.box_dim.y / 2);
-	    this.particles.geom.vertices[i].z = this.resolution * (this.wrap(this.positions[i][2]) - this.box_dim.z / 2);
+	    this.particles.geom.vertices[i].x = this.resolution * (this.wrap(this.positions[i][0], 0) - this.box_dim.x / 2);								 
+	    this.particles.geom.vertices[i].y = this.resolution * (this.wrap(this.positions[i][1], 1) - this.box_dim.y / 2);
+	    this.particles.geom.vertices[i].z = this.resolution * (this.wrap(this.positions[i][2], 2) - this.box_dim.z / 2);
 	}
 	this.particles.geom.verticesNeedUpdate = true;
     }
 
     for(i = 0; i < this.extra_meshes.length; i++) {
-	this.extra_meshes[i].position.x = this.resolution * (this.wrap(this.extra_meshes[i].position.x) - this.box_dim.x / 2);
-	this.extra_meshes[i].position.y = this.resolution * (this.wrap(this.extra_meshes[i].position.y) - this.box_dim.y / 2);
-	this.extra_meshes[i].position.z = this.resolution * (this.wrap(this.extra_meshes[i].position.z) - this.box_dim.z / 2);
+	this.extra_meshes[i].position.x = this.resolution * (this.wrap(this.extra_meshes[i].position.x, 0) - this.box_dim.x / 2);
+	this.extra_meshes[i].position.y = this.resolution * (this.wrap(this.extra_meshes[i].position.y, 1) - this.box_dim.y / 2);
+	this.extra_meshes[i].position.z = this.resolution * (this.wrap(this.extra_meshes[i].position.z, 2) - this.box_dim.z / 2);
     }
 
 }
@@ -206,21 +247,7 @@ Sim.prototype.update = function() {
     //this is the actual simulation	
     this.integrate(timestep);
 }
-Sim.prototype.minimum_distance=function(position1, position2){// an alternative method to calculate the distance between two particles
-    var difference=(position1-position2)/this.box_dim.x;
-    var difference2=position1-position2-Math.floor(difference)*this.box_dim.x;
-    var dx2= this.box_dim.x-Math.abs(difference2);
-    if (Math.abs(difference2)>dx2){
 
-	return (Math.abs(dx2));
-
-    }
-    else {
-	return (Math.abs(difference2));
-   }
-}
- 
- 
 /*Creating neighbor list*/
 Sim.prototype.empty_neighbor=function(){
     var i;
@@ -242,7 +269,7 @@ Sim.prototype.update_neighborlist=function(){
 	    var differ=[0,0,0];
 	    var differ_sq=0;
 	    for(j=0; j<3; j++){
-		differ[j]=this.min_image_dist(this.positions[i][j],this.positions[k][j]);//calculates the minimum image distance
+		differ[j]=this.min_image_dist(this.positions[i][j],this.positions[k][j], j);//calculates the minimum image distance
 		differ_sq+=differ[j]*differ[j];//calculates the magnitude of diffrence in three dimensions
 	    }
 	 
@@ -293,7 +320,7 @@ Sim.prototype.calculate_forces=function() {
 
 		//compute the minimum image distance.
 		//console.log(this.neighbor_array[i][k])
-		r[j] =this.min_image_dist(this.positions[i][j],this.positions[this.neighbor_array[i][k]][j]);
+		r[j] =this.min_image_dist(this.positions[i][j],this.positions[this.neighbor_array[i][k]][j], j);
 		//add to growing sq magnitude
 		mag_r += r[j] * r[j];
 	    }
@@ -331,7 +358,7 @@ Sim.prototype.integrate=function(timestep){
 	    for(j = 0; j < 3; j++) {
 		this.velocities[i][j]+=(0.5*timestep*this.forces[i][j]/this.m);
 		this.positions[i][j]+=(0.5*timestep*this.velocities[i][j]);
-		this.positions[i][j]=this.wrap(this.positions[i][j]);
+		this.positions[i][j]=this.wrap(this.positions[i][j], j);
 	    }	    	    	       
 	}
     }
@@ -351,7 +378,8 @@ Sim.prototype.integrate=function(timestep){
     //calculates total force
     var te = (ke + pe);
     //calculates temperature from kinetic energy
-    var t = 2.0*ke/(3.0*this.positions.length * this.kb);    
+    var dim = 2.0 ? this.two_dimension : 3.0;
+    var t = 2.0*ke/(dim*this.positions.length * this.kb);    
 
     if(!this.pause) {
 	for(i = 0; i <  this.positions.length; i++) {	
