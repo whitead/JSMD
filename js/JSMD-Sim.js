@@ -67,7 +67,7 @@ Sim.prototype.start_plotting = function(id_prefix, light_background) {
     id_prefix = id_prefix || "";
     light_background = light_background || false;
     
-    var a = create_plots(id_prefix, light_background);
+    var a = create_sim_plots(id_prefix, light_background);
     this.energy_chart = a[0];
     this.temperature_chart = a[1];
 }
@@ -270,9 +270,7 @@ Sim.prototype.render = function() {
     }
 
     for(i = 0; i < this.extra_meshes.length; i++) {
-	this.extra_meshes[i].position.x = this.resolution * (this.wrap(this.extra_meshes[i].position.x, 0) - this.box_dim.x / 2);
-	this.extra_meshes[i].position.y = this.resolution * (this.wrap(this.extra_meshes[i].position.y, 1) - this.box_dim.y / 2);
-	this.extra_meshes[i].position.z = this.resolution * (this.wrap(this.extra_meshes[i].position.z, 2) - this.box_dim.z / 2);
+	this.extra_meshes[i].position.applyMatrix4(this.transform);
     }
 
 }
@@ -457,7 +455,7 @@ Sim.prototype.integrate=function(timestep){
     
     if(this.pause || this.steps % 100 === 0){
 	if(this.do_plots)
-	    update_plot(te,ke,pe,t,this.energy_chart, this.temperature_chart);
+	    update_sim_plot(te,ke,pe,t,this.energy_chart, this.temperature_chart);
     }
     
     if(!this.pause && this.steps % 10 === 0){

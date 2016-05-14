@@ -62,3 +62,34 @@ NeighborDrawer.prototype.update = function(sim) {
 	i += 1;
     }
 }
+
+
+function Colvar(sim, fxn, name, plot_id) {
+    this.do_plot = false;
+    this.fxn = fxn;
+    if(name && plot_id){
+	this.do_plot = true
+	this.chart = create_plots(plot_id);	
+    }
+    
+    //create closure and register
+    var that = this;
+    sim.add_update_listener(this);
+    
+}
+
+Colvar.prototype.update = function(sim) {
+    var value = this.fxn(sim.positions, sim.velocities, sim.dimension);    
+    update_plot(this.chart, value);    
+}
+    
+function watch_com(sim) {
+    var c = new Colvar(sim, function(p, v, d) {
+	var value = 0;
+	for(var i = 0; i < p.length; i++) {
+	    value += p[i][0];
+	}
+	return value / p.length;
+    }, 'Center of Mass', 'com-chart');
+    sim.add_update_listener(c);
+}
