@@ -10,9 +10,6 @@ function main() {
     elements[0].set_positions(square_lattice([7,7,1], 1, 0.5));    
     elements[1].set_positions(square_lattice([7,7,1], 1.0, 0.5));
 
-    elements[0].
-    elements[1].set_positions(square_lattice([7,7,1], 1.0, 0.5));
-
 
     var m = new THREE.Matrix4()
     m.makeTranslation(window.innerWidth / 6, 0, 0);
