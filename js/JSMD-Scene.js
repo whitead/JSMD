@@ -1,3 +1,5 @@
+//JSMD-Scene.js
+
 function Scene(elements, root, ortho, controls, light_background, fov) {
 
     this.elements = elements;

@@ -1,6 +1,7 @@
+//JSMD-Plot.js
 
 /*Adds new data to the plot*/
-function update_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {
+function update_sim_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {
 
     var chart_data1 = energy_chart.seriesSet[0].timeSeries;
     chart_data1.append(new Date().getTime(),TE);
@@ -11,9 +12,56 @@ function update_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {
     var temperature_chart_data = temperature_chart.seriesSet[0].timeSeries;
     temperature_chart_data.append(new Date().getTime(),Temp);
 }
+
+function update_plot(chart, v, index) {
+    index = index || 0;
+    var d = chart.seriesSet[index].timeSeries;
+    d.append(new Date().getTime(), v);
+}
+
+function create_plots(id, light_background, series_number, colors) {
+    
+    series_number = series_number || 1;
+    id = id || "";
+    var i;
+
+    if(typeof colors === 'undefined') {
+	colors = [];
+	for(i = 0; i < series_number; i++)
+	    colors.push( 'rgb(255, 0, 0)');
+    }
+    
+    
+    var labels = '#ffffff';
+    var background = '#000000';
+
+    if(light_background) {
+	labels = '#3333333';
+	background = '#FFFFFF';
+    }
+	    
+    var chart = new SmoothieChart({
+	grid: {
+	    fillStyle: background
+	},
+	labels: {
+	    fillStyle: labels
+	}
+    });
+
+    for(i = 0; i < series_number; i++) {
+	var cd = new TimeSeries();
+	chart.addTimeSeries(cd, { strokeStyle: colors[i], lineWidth: 3 });
+
+    }
+
+    chart.streamTo(document.getElementById(id), 3000);
+    return chart;
+}
+
     
 /*Creates new plot*/
-function create_plots(id_prefix, light_background) {
+function create_sim_plots(id_prefix, light_background) {
 
     id_prefix = id_prefix || "";
     
