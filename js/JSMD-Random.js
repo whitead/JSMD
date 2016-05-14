@@ -1,6 +1,6 @@
 // by Sean McCullough (banksean@gmail.com)
 // 25.December 2007
-//adapted to match wikipedia
+//adapted to match wikipedia, cuz it was wrong in the first place. 
 
 /** 
  * Javascript implementation of the Box-Muller transform.
@@ -12,13 +12,20 @@
  * @param {Number} sigma The standard-deviation of the distribution
  * @param {Number} mu The center of the distribution
  */
-function NormalDistribution(sigma, mu) {
+
+
+function NormalDistribution(sigma, mu, seed) {
 	return new Object({
 	    sigma: sigma,
 	    mu: mu,
 	    y1: 0,
 	    y2: 0,
 	    use_last: 0,
+	    seed: seed || 1,
+	    random: function() {
+		var x = Math.sin(this.seed++) * 10000;
+		return x - Math.floor(x);
+	    },
 	    sample: function() {
 		var x1, x2, w;
 		if (this.use_last) {		    
@@ -26,8 +33,8 @@ function NormalDistribution(sigma, mu) {
 		    this.use_last = 0;
 		} else {
 		    do {
-			x1 = 2.0 * Math.random() - 1.0
-			x2 = 2.0 * Math.random() - 1.0
+			x1 = 2.0 * this.random() - 1.0
+			x2 = 2.0 * this.random() - 1.0
 			w = x1 * x1 + x2 * x2
 		    }while(w >= 1.0);
 

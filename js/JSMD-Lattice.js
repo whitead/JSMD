@@ -27,6 +27,10 @@ function enumerate_grid(fxn, dim, sizes, indices) {
 function square_lattice(counts, spacing, offset) {
     var result = [];
     var tmp;
+
+    offset = offset || 0
+    spacing = spacing || 1
+    
     if(typeof spacing === "number") {
 	tmp = spacing;
 	spacing = [];

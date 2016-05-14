@@ -13,9 +13,34 @@ function update_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {
 }
     
 /*Creates new plot*/
-function createTimeline() {
-    var energy_chart = new SmoothieChart();
-    var temperature_chart  = new SmoothieChart();
+function create_plots(id_prefix, light_background) {
+
+    id_prefix = id_prefix || "";
+    
+    var labels = '#ffffff';
+    var background = '#000000';
+
+    if(light_background) {
+	labels = '#3333333';
+	background = '#FFFFFF';
+    }
+	    
+    var energy_chart = new SmoothieChart({
+	grid: {
+	    fillStyle: background
+	},
+	labels: {
+	    fillStyle: labels
+	}
+    });
+    var temperature_chart  = new SmoothieChart({
+	grid: {
+	    fillStyle: background
+	},
+	labels: {
+	    fillStyle: labels
+	}
+    });
     var chart_data1 = new TimeSeries();
     energy_chart.addTimeSeries(chart_data1, { strokeStyle:'rgb(255, 0, 255)', lineWidth: 3 });
     var chart_data2 = new TimeSeries();
@@ -24,7 +49,7 @@ function createTimeline() {
     energy_chart.addTimeSeries(chart_data3, { strokeStyle: 'rgba(255,255,0,1)', lineWidth: 3 });
     var temperature_chart_data = new TimeSeries();
     temperature_chart.addTimeSeries(temperature_chart_data, { strokeStyle:'rgb(255, 0, 0)', lineWidth: 3 });
-    energy_chart.streamTo(document.getElementById("energy-chart"), 3000);
-    temperature_chart.streamTo(document.getElementById("temperature-chart"), 3000);
+    energy_chart.streamTo(document.getElementById(id_prefix + "energy-chart"), 3000);
+    temperature_chart.streamTo(document.getElementById(id_prefix + "temperature-chart"), 3000);
     return [energy_chart,temperature_chart];
 }

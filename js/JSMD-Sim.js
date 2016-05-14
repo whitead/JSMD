@@ -7,7 +7,7 @@
 
 var dim_names = ['x', 'y', 'z']
 
-function Sim(box_dim, viewwidth, viewheight, two_dimension) {
+function Sim(box_dim, viewwidth, viewheight, dimension, seed, r_cut, r_skin) {
     
     //longest diagonal
     var max = 0;
@@ -18,16 +18,19 @@ function Sim(box_dim, viewwidth, viewheight, two_dimension) {
     this.box_dim = new THREE.Vector3(box_dim[0], box_dim[1], box_dim[2]);
     this.transform = new THREE.Matrix4();
     this.transform.makeScale(resolution, resolution, resolution);
-    this.two_dimension = two_dimension || false;
+    this.transform.multiply(new THREE.Matrix4().makeTranslation(-box_dim[0] / 2, -box_dim[1] / 2, -box_dim[2] / 2));
+
+    this.dimension = dimension || 3;
+    this.seed = seed || 1;
 
     //setup time
     this.clock = new THREE.Clock();
     this.time = 0;
     this.steps = 0;
     this.timestep = 0.02
-    this.pause = true;
+    this.pause = false;
 
-    this.scene = null;
+    this.scene = null;    
 
     //set-up listeners
     this.update_listeners = [];
@@ -39,22 +42,31 @@ function Sim(box_dim, viewwidth, viewheight, two_dimension) {
     
     this.sigma=0.5;//put a slider here to adjust sigma value, see more/less neighbors
     this.kb=1;
-    this.T=1.1; //add get command for slider here, make this default temp
-    this.particle_radius = this.sigma * 150;
+    this.T=1.0; //add get command for slider here, make this default temp
+    this.particle_radius = this.sigma *  3.25 * resolution;
     
-    //For the plots
-    var a = createTimeline();
+    //neighbor list stuff
+    this.r_cut_sq= r_cut || 2.5*this.sigma;
+    this.r_skin= r_skin || this.sigma + this.r_cut_sq;
+
+    this.r_cut *= this.r_cut;    
+    this.r_skin *= this.r_skin;
+
+    this.do_plots = false;
+}
+
+/*
+* Start plotting
+*/
+Sim.prototype.start_plotting = function(id_prefix, light_background) {
+    this.do_plots = true;
+
+    id_prefix = id_prefix || "";
+    light_background = light_background || false;
+    
+    var a = create_plots(id_prefix, light_background);
     this.energy_chart = a[0];
     this.temperature_chart = a[1];
-
-//    this.r_cut_sq=Math.pow(2.0*this.sigma, 2);//radius of the cut off range
-    //    this.r_skin=Math.pow(2.5*this.sigma, 2);//radius of the skin
-//    this.r_cut_sq=Math.pow(3.0*this.sigma, 2);//radius of the cut off range
-//    this.r_skin=Math.pow(3.5*this.sigma, 2);//radius of the skin
-    this.r_cut_sq=Math.pow(6.0*this.sigma, 2);//radius of the cut off range
-    this.r_skin=Math.pow(7.0*this.sigma, 2);//radius of the skin
-
-
 }
 
 /*
@@ -99,14 +111,14 @@ Sim.prototype.init_render = function(scene) {
     this.update_neighborlist();//update the list
 
     //draw simulation box
-    if(this.two_dimension) {
+    if(this.dimension === 2) {
 	
 	var shape = new THREE.Shape();
-	shape.moveTo( -this.box_dim.x/2, -this.box_dim.y / 2 );
-	shape.lineTo( -this.box_dim.x/2, this.box_dim.y/2 );
-	shape.lineTo( this.box_dim.x/2, this.box_dim.y/2 );
-	shape.lineTo( this.box_dim.x/2, -this.box_dim.y /2 );
-//	shape.lineTo( 0, 0 );
+	shape.moveTo( 0,0);
+	shape.lineTo( 0, this.box_dim.y );
+	shape.lineTo( this.box_dim.x, this.box_dim.y );
+	shape.lineTo( this.box_dim.x,0 );
+	shape.lineTo( 0, 0);	
 	shape.autoClose =  true;
 	var line = new THREE.Line( shape.createPointsGeometry(),
 				   new THREE.LineBasicMaterial( {
@@ -144,7 +156,7 @@ Sim.prototype.init_render = function(scene) {
 	var loader = new THREE.TextureLoader();
 	var _this = this;
 	var url = 'assets/textures/ball.png';
-	if(this.two_dimension)
+	if(this.dimension < 3)
 	    url = 'assets/textures/disc.png';
 	
 	loader.load(url, function(x) {
@@ -171,12 +183,12 @@ Sim.prototype.init_render = function(scene) {
 	this.forces = [];
 	//Creating normally distributed x,y and z velocities
 	var sig= Math.sqrt(this.kb*this.T/this.m);
-	var nd = new NormalDistribution(sig,0); 
+	var nd = new NormalDistribution(sig,0, this.seed); 
 	for(i = 0; i < this.positions.length; i++) {
-	    if(this.two_dimension)
-		this.velocities.push([nd.sample(), nd.sample(), 0]);
-	    else
-		this.velocities.push([nd.sample(), nd.sample(), nd.sample()]);
+	    var v = [0,0,0]
+	    for(var j = 0; j < this.dimension; j++)
+		v[j] = nd.sample();
+	    this.velocities.push(v);
 	    this.forces.push([0, 0, 0]);
 	}
     }
@@ -221,10 +233,16 @@ Sim.prototype.render = function() {
     var i, j;
     
     if(this.particles) {
+	var v = new THREE.Vector3();
+	var a = [0,0,0];
+	var letter;
 	for(i = 0; i < this.positions.length; i++) {
-	    this.particles.geom.vertices[i].x = this.resolution * (this.wrap(this.positions[i][0], 0) - this.box_dim.x / 2);								 
-	    this.particles.geom.vertices[i].y = this.resolution * (this.wrap(this.positions[i][1], 1) - this.box_dim.y / 2);
-	    this.particles.geom.vertices[i].z = this.resolution * (this.wrap(this.positions[i][2], 2) - this.box_dim.z / 2);
+	    
+	    for(j = 0; j < this.dimension; j++)
+		a[j] = this.wrap(this.positions[i][j], j);
+	    v.fromArray(a);
+	    v.applyMatrix4(this.transform);
+	    this.particles.geom.vertices[i].copy(v);
 	}
 	this.particles.geom.verticesNeedUpdate = true;
     }
@@ -237,6 +255,7 @@ Sim.prototype.render = function() {
 
 }
 Sim.prototype.update = function() {
+    /*
     //treat timing
     var delta = this.clock.getDelta();
     //target is 60 fps
@@ -246,6 +265,8 @@ Sim.prototype.update = function() {
     }    
     //this is the actual simulation	
     this.integrate(timestep);
+    */
+     this.integrate(this.timestep);
 }
 
 /*Creating neighbor list*/
@@ -268,7 +289,7 @@ Sim.prototype.update_neighborlist=function(){
  	    //var m=0;
 	    var differ=[0,0,0];
 	    var differ_sq=0;
-	    for(j=0; j<3; j++){
+	    for(j=0; j<this.dimension; j++){
 		differ[j]=this.min_image_dist(this.positions[i][j],this.positions[k][j], j);//calculates the minimum image distance
 		differ_sq+=differ[j]*differ[j];//calculates the magnitude of diffrence in three dimensions
 	    }
@@ -297,7 +318,7 @@ Sim.prototype.calculate_forces=function() {
    
     //zero out the forces
     for(i = 0; i < this.forces.length; i++){
-	for(j = 0; j < 3; j++){
+	for(j = 0; j < this.dimension; j++){
 	    this.forces[i][j] = 0;
 	}
     }
@@ -314,7 +335,7 @@ Sim.prototype.calculate_forces=function() {
 	    var small_r=0 ;
 	    var mag_r=0 ; //The magnitude
 
-	    for(j = 0; j < 3; j++) {
+	    for(j = 0; j < this.dimension; j++) {
 
 		//for each component of position
 
@@ -330,7 +351,7 @@ Sim.prototype.calculate_forces=function() {
 		pe += 4 * this.epsilon * (Math.pow(this.sigma * this.sigma / mag_r, 6) - Math.pow(this.sigma * this.sigma / mag_r, 3))
 		//compute part of force calculation - a = 2 * (s^2 / r^2)^7 - 2 * (s^2 / r^2)^4
 		var a = 2 * Math.pow((this.sigma * this.sigma/mag_r),7)-Math.pow((this.sigma * this.sigma/mag_r),4);
-		for(j = 0; j < 3; j++) {
+		for(j = 0; j < this.dimension; j++) {
 		    //compute per component force - -24 r_j e * a / s^2
 		    var tmp = 24*(r[j])*this.epsilon * a * deno;
     	    	    this.forces[i][j] += tmp;
@@ -355,7 +376,7 @@ Sim.prototype.integrate=function(timestep){
     //integrator
     if(!this.pause) {
 	for(i = 0; i <  this.positions.length; i++) {
-	    for(j = 0; j < 3; j++) {
+	    for(j = 0; j < this.dimension; j++) {
 		this.velocities[i][j]+=(0.5*timestep*this.forces[i][j]/this.m);
 		this.positions[i][j]+=(0.5*timestep*this.velocities[i][j]);
 		this.positions[i][j]=this.wrap(this.positions[i][j], j);
@@ -366,7 +387,7 @@ Sim.prototype.integrate=function(timestep){
     
     for(i = 0; i <  this.positions.length; i++) {
 	
-	for(j = 0; j < 3; j++) {
+	for(j = 0; j < this.dimension; j++) {
 	    if(!this.pause)
 		this.velocities[i][j] += 0.5*timestep*this.forces[i][j]/this.m;
 	    ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2));
@@ -378,12 +399,11 @@ Sim.prototype.integrate=function(timestep){
     //calculates total force
     var te = (ke + pe);
     //calculates temperature from kinetic energy
-    var dim = 2.0 ? this.two_dimension : 3.0;
-    var t = 2.0*ke/(dim*this.positions.length * this.kb);    
+    var t = 2.0*ke/(this.dimension*this.positions.length * this.kb);    
 
     if(!this.pause) {
 	for(i = 0; i <  this.positions.length; i++) {	
-	    for(j = 0; j < 3; j++) {	    
+	    for(j = 0; j < this.dimension; j++) {	    
 		this.velocities[i][j] *= this.T / t;
 	    }	    	    	       
 	}
@@ -393,7 +413,8 @@ Sim.prototype.integrate=function(timestep){
     }
     
     if(this.pause || this.steps % 100 === 0){
-	update_plot(te,ke,pe,t,this.energy_chart, this.temperature_chart);
+	if(this.do_plots)
+	    update_plot(te,ke,pe,t,this.energy_chart, this.temperature_chart);
     }
     
     if(!this.pause && this.steps % 10 === 0){

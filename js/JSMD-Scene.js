@@ -1,23 +1,27 @@
-function Scene(elements, root, two_dimension, fov) {
+function Scene(elements, root, ortho, controls, light_background, fov) {
 
     this.elements = elements;
     this.root = root;
      
-    two_dimension = two_dimension || false;
+    ortho = ortho || false;
+    controls = controls || true;
     fov = fov || 75;
+    light_background = light_background || true;
      
-     if(two_dimension) {
+     if(ortho) {
 	 var factor = 0.5 * Math.tan(fov / 360 * Math.PI);
 	 this.camera = new THREE.OrthographicCamera( this.root.clientWidth * -factor, this.root.clientWidth * factor, this.root.clientHeight * factor, this.root.clientHeight * -factor, 1, 10000 );
 	 this.camera.zoom = 1;
 	 
      } else{
-	 this.camera = new THREE.PerspectiveCamera(75, this.root.clientWidth / this.root.clientHeight, 1, 10000);
+	 this.camera = new THREE.PerspectiveCamera(75, this.root.clientWidth / this.root.clientHeight, 1, 10000);	 
+     }
+
+    if(controls) {
 	 this.controls = new THREE.OrbitControls( this.camera, root );
 	 this.controls.damping = 0.2;
 	 this.controls.addEventListener( 'change', this.render.bind(this) );
-	 
-     }
+    }
 
     this.camera.position.z = Math.min(this.root.clientWidth, this.root.clientHeight);	     
      this.scene = new THREE.Scene();
@@ -28,7 +32,10 @@ function Scene(elements, root, two_dimension, fov) {
     
     this.renderer.setPixelRatio( window.devicePixelRatio );
     this.renderer.setSize( this.root.clientWidth, this.root.clientHeight );
-    this.renderer.setClearColor( 0xffffff, 1 );
+    this.renderer.setClearColor( 0x000000, 1 );    
+    if(light_background)
+	this.renderer.setClearColor( 0xFFFFFF, 1 );
+    
      root.appendChild( this.renderer.domElement );
      window.addEventListener( 'resize', this.onWindowResize.bind(this), false );     
           

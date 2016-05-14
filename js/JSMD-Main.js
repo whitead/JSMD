@@ -1,15 +1,31 @@
 function main() {
     
+
     var root = document.getElementById( 'JSMD' );
     
-    var elements = [new Sim([15,15,1], window.innerWidth, window.innerHeight, true)];
-    elements[0].set_positions(square_lattice([15,15,1], [1,1,1],[1,1,1]));
+    var elements = [new Sim([7,7,1], window.innerWidth, window.innerHeight, 2, 10),
+		    new Sim([7,7,1], window.innerWidth, window.innerHeight, 2, 10),
+		   ];
+    
+    elements[0].set_positions(square_lattice([7,7,1], 1, 0.5));    
+    elements[1].set_positions(square_lattice([7,7,1], 1.0, 0.5));
+
+    elements[0].
+    elements[1].set_positions(square_lattice([7,7,1], 1.0, 0.5));
+
+
+    var m = new THREE.Matrix4()
+    m.makeTranslation(window.innerWidth / 6, 0, 0);
+    elements[0].transform.premultiply(m);
+
+    //flip it for fun?
+    m.makeTranslation(-window.innerWidth / 6, 0, 0);    
+    elements[1].transform.premultiply(m);
+
+    
     var scene = new Scene(elements, root, true);    
     scene.animate();
-
-    //this will draw the 0th particle's neighbors
-    //var nd =  new NeighborDrawer(elements[0], scene, 0);
-
+    
     //bind the pause button
     document.getElementById('pause').onclick = function() {
 	elements[0].toggle_pause();
