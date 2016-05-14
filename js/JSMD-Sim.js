@@ -3,11 +3,13 @@
 * box_dim : a THREE.Vector3 specifying the box dimension 
 * viewwidth: How wide to make the viewable width
 * viewheight: How wide to make the viewable width
+* dimension: integer 
+* seed: random number seed
 */
 
 var dim_names = ['x', 'y', 'z']
 
-function Sim(box_dim, viewwidth, viewheight, dimension, seed, r_cut, r_skin) {
+function Sim(box_dim, viewwidth, viewheight, dimension, seed) {
     
     //longest diagonal
     var max = 0;
@@ -40,19 +42,20 @@ function Sim(box_dim, viewwidth, viewheight, dimension, seed, r_cut, r_skin) {
     this.m=1;
     this.epsilon=1;
     
-    this.sigma=0.5;//put a slider here to adjust sigma value, see more/less neighbors
     this.kb=1;
     this.T=1.0; //add get command for slider here, make this default temp
-    this.particle_radius = this.sigma *  3.25 * resolution;
-    
-    //neighbor list stuff
-    this.r_cut_sq= r_cut || 2.5*this.sigma;
-    this.r_skin= r_skin || this.sigma + this.r_cut_sq;
-
-    this.r_cut *= this.r_cut;    
-    this.r_skin *= this.r_skin;
+    this.particle_radius = 1.5 * resolution;
 
     this.do_plots = false;
+
+    //default to not do neighborlists
+    this.do_neighborlist = false;
+    this.r_cut_sq = 0.001;
+    this.r_skin = 0.001;   
+
+    this.pair_force = null;
+    this.field_force = null;
+    
 }
 
 /*
@@ -107,8 +110,27 @@ Sim.prototype.set_positions = function(positions) {
 
 
 Sim.prototype.init_render = function(scene) {
+
+    //if we don't have any forces, we'll add lj forces and zeroing field force
+    if(this.pair_force === null) {
+	this.set_pair_force(function(r, r2, tmp, dim) {
+	    return lj_pair_force(r, r2, tmp, dim, 0.5, 1.0);
+	}, 1.5, 2.0);
+    }
+    
+    if(this.field_force === null) {
+	//by default, it's a zeroing
+	this.set_field_force(function(r, f, dim) {
+	    for(var i; i < dim; i++)
+		f[i] = 0;
+	    return 0;
+	});
+    }
+	
+    
     this.empty_neighbor();//empty neighbors list
     this.update_neighborlist();//update the list
+
 
     //draw simulation box
     if(this.dimension === 2) {
@@ -281,6 +303,10 @@ Sim.prototype.empty_neighbor=function(){
  
 /*Updating the neighbor's list for atoms within the skin of the particle*/
 Sim.prototype.update_neighborlist=function(){
+
+    if(!this.do_neighborlist)
+	return;
+    
     var i, j, k;
    
     for(i=0; i<this.positions.length; i++){//loops for the length of the rows of the neighbor's list
@@ -313,58 +339,75 @@ Sim.prototype.update_neighborlist=function(){
 */
 
 Sim.prototype.calculate_forces=function() {
+
     var i,j,k; //indices
     var pe = 0; //potential energy
+    var tmp = [0,0,0]; //force vector
    
-    //zero out the forces
+    //zero out the forces and calculate force_filed if necessary
     for(i = 0; i < this.forces.length; i++){
+	pe += this.field_force(this.positions[i], tmp, this.dimension);
 	for(j = 0; j < this.dimension; j++){
 	    this.forces[i][j] = 0;
 	}
     }
-    
-    var deno = 1.0 / (this.sigma * this.sigma);
-    for(i = 0; i < this.neighbor_array.length; i++) {
-	//for each particle
-	for(k = 0; k< this.neighbor_array[i].length; k++) {
-	    if(this.neighbor_array[i][k]===-1){
-		break;}
-	    //for each pair with the ith particle
-	    var r = [0,0,0];  //initialize r vector, which is distance between particles
-	    
-	    var small_r=0 ;
-	    var mag_r=0 ; //The magnitude
-
-	    for(j = 0; j < this.dimension; j++) {
-
-		//for each component of position
-
-		//compute the minimum image distance.
-		//console.log(this.neighbor_array[i][k])
-		r[j] =this.min_image_dist(this.positions[i][j],this.positions[this.neighbor_array[i][k]][j], j);
-		//add to growing sq magnitude
-		mag_r += r[j] * r[j];
-	    }
-	    if (mag_r<=this.r_cut_sq){
+    if(this.do_neighborlist) {    
+	for(i = 0; i < this.neighbor_array.length; i++) {	
+	    //for each particle do pair calculations
+	    for(k = 0; k< this.neighbor_array[i].length; k++) {
+		if(this.neighbor_array[i][k]===-1){
+		    break;}
+		//for each pair with the ith particle
+		var r = [0,0,0];  //initialize r vector, which is distance between particles
 		
-		//update pe
-		pe += 4 * this.epsilon * (Math.pow(this.sigma * this.sigma / mag_r, 6) - Math.pow(this.sigma * this.sigma / mag_r, 3))
-		//compute part of force calculation - a = 2 * (s^2 / r^2)^7 - 2 * (s^2 / r^2)^4
-		var a = 2 * Math.pow((this.sigma * this.sigma/mag_r),7)-Math.pow((this.sigma * this.sigma/mag_r),4);
+		var small_r=0 ;
+		var mag_r=0 ; //The magnitude
+		
 		for(j = 0; j < this.dimension; j++) {
-		    //compute per component force - -24 r_j e * a / s^2
-		    var tmp = 24*(r[j])*this.epsilon * a * deno;
-    	    	    this.forces[i][j] += tmp;
-		    this.forces[this.neighbor_array[i][k]][j] -= tmp;
+		    
+		    //for each component of position
+		    
+		    //compute the minimum image distance.
+		    //console.log(this.neighbor_array[i][k])
+		    r[j] =this.min_image_dist(this.positions[i][j],this.positions[this.neighbor_array[i][k]][j], j);
+		    //add to growing sq magnitude
+		    mag_r += r[j] * r[j];
 		}
-	    }
+		if (mag_r<=this.r_cut_sq){		
+		    //call pairwise force-function
+		    //update pe too
+		    pe += this.pair_force(r, mag_r, tmp, this.dimension);
+		    for(j = 0; j < this.dimension; j++) {
+			//compute per component force - -24 r_j e * a / s^2
+    	    		this.forces[i][j] += tmp[j];
+			this.forces[this.neighbor_array[i][k]][j] -= tmp[j];
+		    }
+		}
+	    }		
 	}
-	
-	
-    }
-    
+    }    
     return pe;
 }
+
+Sim.prototype.set_pair_force = function(fxn, r_cut, r_skin) {
+    
+    this.do_neighborlist = true;
+
+    //neighbor list stuff
+    this.r_cut_sq= r_cut;
+    this.r_skin= r_skin;
+    this.r_cut *= this.r_cut;    
+    this.r_skin *= this.r_skin;
+
+    this.pair_force = fxn;
+
+}
+
+Sim.prototype.set_field_force = function(fxn) {
+    this.field_force = fxn;
+}
+
+Sim.prototype.pair_force = lj_pair_force; 
 
 Sim.prototype.integrate=function(timestep){
 
@@ -423,3 +466,14 @@ Sim.prototype.integrate=function(timestep){
      
 }
 
+
+
+function lj_pair_force(r, r2, tmp, dim, sigma, epsilon) {
+    var deno = 1.0 / (sigma * sigma);
+    var a = 2 * Math.pow((sigma * sigma/r2),7)-Math.pow((sigma * sigma/r2),4);
+    for(var i = 0; i < dim; i++) {
+	//compute per component force - -24 r_j e * a / s^2
+	tmp[i] = 24*(r[i])*epsilon * a * deno;
+    }    
+    return 4 * epsilon * (Math.pow(sigma * sigma / r2, 6) - Math.pow(sigma * sigma / r2, 3))
+}
