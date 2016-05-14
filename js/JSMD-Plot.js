@@ -1,3 +1,4 @@
+//JSMD-Plot.js
 
 /*Adds new data to the plot*/
 function update_sim_plot(TE,KE,PE,Temp,energy_chart,temperature_chart) {

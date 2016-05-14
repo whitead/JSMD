@@ -1,3 +1,5 @@
+//JSMD-Sim-Decorators.js
+
 function NeighborDrawer(sim, scene, index) {
     
     this.index = index;
