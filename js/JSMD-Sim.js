@@ -112,7 +112,7 @@ Sim.prototype.set_positions = function(positions) {
 Sim.prototype.init_render = function(scene) {
 
     //if we don't have any forces, we'll add lj forces and zeroing field force
-    if(this.pair_force === null) {
+    if(this.field_force === null && this.pair_force === null) {
 	this.set_pair_force(function(r, r2, tmp, dim) {
 	    return lj_pair_force(r, r2, tmp, dim, 0.5, 1.0);
 	}, 1.5, 2.0);
@@ -346,7 +346,7 @@ Sim.prototype.calculate_forces=function() {
     for(i = 0; i < this.forces.length; i++){
 	pe += this.field_force(this.positions[i], tmp, this.dimension);
 	for(j = 0; j < this.dimension; j++){
-	    this.forces[i][j] = 0;
+	    this.forces[i][j] = tmp[j];
 	}
     }
     if(this.do_neighborlist) {    
