@@ -1,3 +1,5 @@
+//JSMD-Lattice.js
+
 function prepend_emit(array, element) {
     var copy = array.slice(0);
     copy.unshift(element)

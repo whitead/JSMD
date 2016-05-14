@@ -1,3 +1,4 @@
+//JSMD-Sim.js
 
 /*
 * box_dim : a THREE.Vector3 specifying the box dimension 
@@ -48,6 +49,7 @@ function Sim(box_dim, viewwidth, viewheight, dimension, seed) {
 
     this.do_plots = false;
 
+
     //default to not do neighborlists
     this.do_neighborlist = false;
     this.r_cut_sq = 0.001;
@@ -56,6 +58,7 @@ function Sim(box_dim, viewwidth, viewheight, dimension, seed) {
     this.pair_force = null;
     this.field_force = null;
     
+
 }
 
 /*
@@ -84,7 +87,8 @@ Sim.prototype.add_update_listener = function(x) {
  * and displayed in simulation coordinates
  */
 Sim.prototype.add_mesh = function(m) {
-    this.scene.add(m);
+    if(this.scene !== null)
+	this.scene.add(m);
     this.extra_meshes.push(m);
     
 }
@@ -112,12 +116,12 @@ Sim.prototype.set_positions = function(positions) {
 Sim.prototype.init_render = function(scene) {
 
     //if we don't have any forces, we'll add lj forces and zeroing field force
-    if(this.pair_force === null) {
+    if(this.field_force === null && this.pair_force === null) {
 	this.set_pair_force(function(r, r2, tmp, dim) {
 	    return lj_pair_force(r, r2, tmp, dim, 0.5, 1.0);
 	}, 1.5, 2.0);
     }
-    
+
     if(this.field_force === null) {
 	//by default, it's a zeroing
 	this.set_field_force(function(r, f, dim) {
@@ -133,7 +137,7 @@ Sim.prototype.init_render = function(scene) {
 
 
     //draw simulation box
-    if(this.dimension === 2) {
+    if(this.dimension < 3) {
 	
 	var shape = new THREE.Shape();
 	shape.moveTo( 0,0);
@@ -149,7 +153,7 @@ Sim.prototype.init_render = function(scene) {
 	line.applyMatrix(this.transform);
 	scene.add(line);
     }
-    else{
+    else if(this.dimension === 3){
 	var geomDim = this.box_dim.clone().applyMatrix4(this.transform);
 	this.box = { 
 	    'geom': new THREE.BoxGeometry(geomDim.x, geomDim.y, geomDim.z),
@@ -216,6 +220,9 @@ Sim.prototype.init_render = function(scene) {
     }
     
     this.scene = scene;
+
+    //making sure meshes were added
+    this.extra_meshes.map(function(m){scene.add(m);});
 };
  
  
@@ -262,18 +269,20 @@ Sim.prototype.render = function() {
 	    
 	    for(j = 0; j < this.dimension; j++)
 		a[j] = this.wrap(this.positions[i][j], j);
+	    //special case, if doing pe
+	    if(this.dimension === 1)
+		a[1] = this.positions[i][1];
 	    v.fromArray(a);
 	    v.applyMatrix4(this.transform);
 	    this.particles.geom.vertices[i].copy(v);
 	}
 	this.particles.geom.verticesNeedUpdate = true;
     }
-
+    /* TODO: At some point deal with dynamic meshes
     for(i = 0; i < this.extra_meshes.length; i++) {
-	this.extra_meshes[i].position.x = this.resolution * (this.wrap(this.extra_meshes[i].position.x, 0) - this.box_dim.x / 2);
-	this.extra_meshes[i].position.y = this.resolution * (this.wrap(this.extra_meshes[i].position.y, 1) - this.box_dim.y / 2);
-	this.extra_meshes[i].position.z = this.resolution * (this.wrap(this.extra_meshes[i].position.z, 2) - this.box_dim.z / 2);
+	this.extra_meshes[i].position.applyMatrix4(this.transform);
     }
+    */
 
 }
 Sim.prototype.update = function() {
@@ -348,7 +357,7 @@ Sim.prototype.calculate_forces=function() {
     for(i = 0; i < this.forces.length; i++){
 	pe += this.field_force(this.positions[i], tmp, this.dimension);
 	for(j = 0; j < this.dimension; j++){
-	    this.forces[i][j] = 0;
+	    this.forces[i][j] = tmp[j];
 	}
     }
     if(this.do_neighborlist) {    
@@ -403,8 +412,43 @@ Sim.prototype.set_pair_force = function(fxn, r_cut, r_skin) {
 
 }
 
-Sim.prototype.set_field_force = function(fxn) {
+Sim.prototype.set_field_force = function(fxn, draw_field) {
     this.field_force = fxn;
+    draw_field = draw_field || false;
+    
+    if(draw_field && this.dimension === 1){
+	var nbins = 100.0;
+	var points = [];
+	var x, pe, min = 10000, max = -10000;
+	for(var i =0; i < nbins; i++){
+	    
+	    x = 0 + i * this.box_dim.x  /(nbins - 1);	    
+	    pe = fxn([x],[0],1);
+	    min = Math.min(pe,min);
+	    max = Math.max(pe,max);	    
+	    points.push(new THREE.Vector2(x,pe));
+	}
+	
+
+	var s = this.box_dim.y/(max - min);
+	var t = new THREE.Matrix4()
+	t.set(1,0,0,0,0,s,0, -min * s,0,0,1,0,0,0,0,1 );
+
+
+	var pmf_curve = new THREE.Path(points);
+	
+	var pmf_geom = pmf_curve.createPointsGeometry(nbins);
+	pmf_geom.applyMatrix(t);
+	var pmf_material = new THREE.LineBasicMaterial({ color : 0xEE2299, linewidth : 3});
+
+	var o = new THREE.Line(pmf_geom, pmf_material);	
+
+	o.applyMatrix(this.transform);
+	this.add_mesh(o);
+
+	//store that PE to position transform
+	this.pe2pos = t;
+    }
 }
 
 Sim.prototype.pair_force = lj_pair_force; 
@@ -435,7 +479,18 @@ Sim.prototype.integrate=function(timestep){
 		this.velocities[i][j] += 0.5*timestep*this.forces[i][j]/this.m;
 	    ke+= 0.5*this.m*(Math.pow((this.velocities[i][j]), 2));
 	    
-	}	    	    	       
+	}
+	//if we're plotting our PE (1D, field force)
+	if(this.dimension === 1 && this.field_force !== null) {
+	    //create temp vector so we can apply matrix transform
+	    var loc = new THREE.Vector3(0,0,0);
+	    loc.x = this.positions[i][0];
+	    loc.y = pe;
+	    //apply it
+	    loc.applyMatrix4(this.pe2pos);
+	    //store result
+	    this.positions[i][1] = loc.y;
+	}
     }
 
     
@@ -444,7 +499,7 @@ Sim.prototype.integrate=function(timestep){
     //calculates temperature from kinetic energy
     var t = 2.0*ke/(this.dimension*this.positions.length * this.kb);    
 
-    if(!this.pause) {
+    if(!this.pause && this.T !== null) {
 	for(i = 0; i <  this.positions.length; i++) {	
 	    for(j = 0; j < this.dimension; j++) {	    
 		this.velocities[i][j] *= this.T / t;
@@ -468,6 +523,7 @@ Sim.prototype.integrate=function(timestep){
 
 
 
+
 function lj_pair_force(r, r2, tmp, dim, sigma, epsilon) {
     var deno = 1.0 / (sigma * sigma);
     var a = 2 * Math.pow((sigma * sigma/r2),7)-Math.pow((sigma * sigma/r2),4);
@@ -477,3 +533,20 @@ function lj_pair_force(r, r2, tmp, dim, sigma, epsilon) {
     }    
     return 4 * epsilon * (Math.pow(sigma * sigma / r2, 6) - Math.pow(sigma * sigma / r2, 3))
 }
+
+function tabulate_pmf(func, boxdim, nbins) {//Call this for setup of surface
+    var i;//index for pmf loop
+    var table=[];
+    for(i = 0; i < nbins; i++){
+	table.push(func(i * (boxdim/nbins)));
+    }
+    return(table);
+}
+
+function parabola_field(r, f, dim) {
+    f[0] = -parabola_derivative(r[0]);
+    return parabola(r[0]);
+}
+	
+    
+//var pmf_table=tabulate_pmf(parabola, this.box_dim[0],100);
