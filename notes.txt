@@ -1,0 +1,21 @@
+Multiple scenes
+----
+
+We need to have short scripts in the HTML that will define the
+properties of the simulation. We could also work with custom
+elements. Better to use scripts, since it's easy.
+
+Next, we loop over the scripts.
+
+Something like:
+
+<div class="simulation">
+     <script>
+	var parent = document.scriptNode (?)	
+	s = new Simulation(...)
+	s.square_lattice(...)
+	parent.simulation = s;
+
+     </script>
+
+</div>
