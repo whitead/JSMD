@@ -49,14 +49,14 @@ function main() {
     watch_com(elements[0]);
 
  */   
-    var scene = new Scene(elements, root, true);    
+    var scene = new Scene(elements, root, true, false, true);    
     scene.animate();
     
     //bind the pause button
-    document.getElementById('pause').onclick = function() {
-	   elements[0].toggle_pause();
-       elements[1].toggle_pause();
-       elements[2].toggle_pause();
+    //document.getElementById('pause').onclick = function() {
+//	   elements[0].toggle_pause();
+//       elements[1].toggle_pause();
+//       elements[2].toggle_pause();
 
-    };
+//    };
 }

@@ -166,7 +166,6 @@ Sim.prototype.init_render = function(scene) {
     }
 
 
-
     //if we have positions, then we render them
     if('undefined' !== typeof this.positions) {
 	//create the geometric

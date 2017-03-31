@@ -6,9 +6,9 @@ function Scene(elements, root, ortho, controls, light_background, fov) {
     this.root = root;
      
     ortho = ortho || false;
-    controls = controls || true;
+    controls = controls || false;
     fov = fov || 75;
-    light_background = light_background || true;
+    light_background = light_background || false;
      
      if(ortho) {
 	 var factor = 0.5 * Math.tan(fov / 360 * Math.PI);
